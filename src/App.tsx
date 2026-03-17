@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import { CooperativeLayout } from "./components/layout/CooperativeLayout";
 import Dashboard from "./pages/cooperative/Dashboard";
 import Members from "./pages/cooperative/Members";
+import MemberProfile from "./pages/cooperative/MemberProfile";
 import Contributions from "./pages/cooperative/Contributions";
 import Loans from "./pages/cooperative/Loans";
 import Dividends from "./pages/cooperative/Dividends";
