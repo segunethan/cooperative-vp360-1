@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import { CooperativeLayout } from "./components/layout/CooperativeLayout";
 import Dashboard from "./pages/cooperative/Dashboard";
 import Members from "./pages/cooperative/Members";
+import MemberProfile from "./pages/cooperative/MemberProfile";
 import Contributions from "./pages/cooperative/Contributions";
 import Loans from "./pages/cooperative/Loans";
 import Dividends from "./pages/cooperative/Dividends";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/cooperative" element={<CooperativeLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="members" element={<Members />} />
+            <Route path="members/:memberId" element={<MemberProfile />} />
             <Route path="contributions" element={<Contributions />} />
             <Route path="loans" element={<Loans />} />
             <Route path="dividends" element={<Dividends />} />
