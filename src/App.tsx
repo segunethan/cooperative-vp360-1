@@ -29,6 +29,7 @@ const App = () => (
           <Route path="/cooperative" element={<CooperativeLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="members" element={<Members />} />
+            <Route path="members/:memberId" element={<MemberProfile />} />
             <Route path="contributions" element={<Contributions />} />
             <Route path="loans" element={<Loans />} />
             <Route path="dividends" element={<Dividends />} />
