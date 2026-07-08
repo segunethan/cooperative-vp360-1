@@ -17,14 +17,20 @@ interface KYCVerificationDialogProps {
   onOpenChange: (open: boolean) => void;
   memberName: string;
   memberId: string;
+  onConfirm?: () => void;
+  loading?: boolean;
 }
 
-const KYCVerificationDialog = ({ open, onOpenChange, memberName, memberId }: KYCVerificationDialogProps) => {
+const KYCVerificationDialog = ({ open, onOpenChange, memberName, memberId, onConfirm, loading = false }: KYCVerificationDialogProps) => {
   const { toast } = useToast();
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState<null | "success" | "failed">(null);
 
   const handleVerify = () => {
+    if (onConfirm) {
+      onConfirm();
+      return;
+    }
     setVerifying(true);
     setTimeout(() => {
       setVerifying(false);

@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye, Pencil, UserCheck, UserX, ShieldCheck, Ban, MessageSquare } from "lucide-react";
+import { MoreHorizontal, Eye, Pencil, UserCheck, UserX, ShieldCheck, Ban, MessageSquare, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface MemberActionsProps {
@@ -17,6 +17,7 @@ interface MemberActionsProps {
   onExit?: (id: string) => void;
   onEdit?: (id: string) => void;
   onVerifyKYC?: (id: string) => void;
+  onResendInvite?: (id: string) => void;
 }
 
 const MemberActions = ({
@@ -27,6 +28,7 @@ const MemberActions = ({
   onExit,
   onEdit,
   onVerifyKYC,
+  onResendInvite,
 }: MemberActionsProps) => {
   const navigate = useNavigate();
 
@@ -61,6 +63,12 @@ const MemberActions = ({
           <MessageSquare className="h-4 w-4 mr-2" />
           Send Message
         </DropdownMenuItem>
+        {(memberStatus === "Pending" || memberStatus === "Invited") && (
+          <DropdownMenuItem onClick={() => onResendInvite?.(memberId)}>
+            <Mail className="h-4 w-4 mr-2" />
+            Resend Invitation
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {memberStatus === "Active" && (
           <DropdownMenuItem onClick={() => onSuspend?.(memberId)} className="text-warning">

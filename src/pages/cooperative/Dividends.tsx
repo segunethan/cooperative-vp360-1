@@ -1,385 +1,221 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { 
-  DollarSign, 
-  Calculator, 
-  TrendingUp, 
-  Plus, 
-  Download,
-  Eye
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  TrendingUp, ChevronDown, Users, Calendar, Plus, Banknote,
 } from "lucide-react";
+import { fetchAllDividends, fetchDividendEntitlements } from "@/lib/api/dividends";
+import DeclareDividendDialog from "@/components/cooperative/dividends/DeclareDividendDialog";
+
+const STATUS_COLORS: Record<string, string> = {
+  DRAFT:      "bg-muted/50 text-muted-foreground border-border",
+  DECLARED:   "bg-primary/10 text-primary border-primary/20",
+  PROCESSING: "bg-warning/10 text-warning border-warning/20",
+  COMPLETED:  "bg-success/10 text-success border-success/20",
+};
+
+const DividendEntitlementsRow = ({ dividendId }: { dividendId: string }) => {
+  const { data: entitlements = [], isLoading } = useQuery({
+    queryKey: ["dividend-entitlements", dividendId],
+    queryFn: () => fetchDividendEntitlements(dividendId),
+  });
+
+  if (isLoading) return (
+    <div className="p-4 space-y-2">
+      {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+    </div>
+  );
+
+  return (
+    <div className="border-t border-border bg-muted/20">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="pl-6">Member</TableHead>
+            <TableHead>ID</TableHead>
+            <TableHead className="text-right">Total Contributions</TableHead>
+            <TableHead className="text-right">Dividend</TableHead>
+            <TableHead className="text-right">Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {entitlements.map((e) => (
+            <TableRow key={e.id}>
+              <TableCell className="pl-6 font-medium text-sm">{e.memberName}</TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">{e.memberNumber}</TableCell>
+              <TableCell className="text-right text-sm">{e.contributionTotal}</TableCell>
+              <TableCell className="text-right text-sm font-semibold text-primary">{e.entitlement}</TableCell>
+              <TableCell className="text-right">
+                <Badge variant="outline" className={e.paidAt
+                  ? "bg-success/10 text-success border-success/20"
+                  : "bg-muted/50 text-muted-foreground border-border"
+                }>
+                  {e.paidAt ? `Paid ${e.paidAt}` : "Pending"}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
 
 const Dividends = () => {
-  const dividendHistory = [
-    {
-      period: "Q4 2024",
-      totalAmount: "₦12,500,000",
-      rate: "15%",
-      payoutDate: "Dec 20, 2024",
-      members: 1247,
-      status: "Completed",
-    },
-    {
-      period: "Q2 2024", 
-      totalAmount: "₦8,750,000",
-      rate: "12%",
-      payoutDate: "Jun 15, 2024",
-      members: 1205,
-      status: "Completed",
-    },
-    {
-      period: "Q4 2023",
-      totalAmount: "₦11,200,000", 
-      rate: "14%",
-      payoutDate: "Dec 18, 2023",
-      members: 1156,
-      status: "Completed",
-    },
-  ];
+  const { tenant } = useAuth();
+  const [declareOpen, setDeclareOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const upcomingDividend = {
-    period: "Q1 2025",
-    estimatedAmount: "₦15,200,000",
-    eligibleMembers: 1247,
-    calculationMethod: "Per Share Basis",
-    proposedRate: "16%",
-    targetDate: "Jun 30, 2025",
-  };
+  const { data: dividends = [], isLoading, refetch } = useQuery({
+    queryKey: ["dividends"],
+    queryFn: fetchAllDividends,
+    enabled: !!tenant,
+  });
 
-  const memberEntitlements = [
-    {
-      memberId: "MEM-001",
-      name: "John Doe",
-      shareBalance: "₦180,000",
-      entitlement: "₦28,800",
-      paymentMethod: "Bank Transfer",
-      status: "Pending",
-    },
-    {
-      memberId: "MEM-002",
-      name: "Sarah Wilson", 
-      shareBalance: "₦120,000",
-      entitlement: "₦19,200",
-      paymentMethod: "Cash Pickup",
-      status: "Pending",
-    },
-    {
-      memberId: "MEM-004",
-      name: "Emily Brown",
-      shareBalance: "₦280,000",
-      entitlement: "₦44,800", 
-      paymentMethod: "Bank Transfer",
-      status: "Pending",
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Completed":
-        return "bg-success/10 text-success border-success/20";
-      case "Pending":
-        return "bg-warning/10 text-warning border-warning/20";
-      case "Processing":
-        return "bg-primary/10 text-primary border-primary/20";
-      default:
-        return "bg-muted/10 text-muted-foreground border-border";
-    }
-  };
+  const totalPaidKobo = dividends
+    .filter((d) => d.status === "COMPLETED")
+    .reduce((sum, d) => sum + d.totalAmountKobo, 0);
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dividends Management</h1>
-          <p className="text-muted-foreground">Manage dividend declarations and distributions</p>
+          <h1 className="text-2xl font-bold text-foreground">Dividends</h1>
+          <p className="text-muted-foreground">Declare and manage member dividend payouts</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
-          <Button size="sm">
-            <Calculator className="h-4 w-4 mr-2" />
-            Calculate Dividend
-          </Button>
-        </div>
+        <Button onClick={() => setDeclareOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Declare Dividend
+        </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <DollarSign className="h-5 w-5 text-primary" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Last Dividend</p>
-                <p className="text-2xl font-bold">₦12.5M</p>
-                <p className="text-xs text-muted-foreground">Q4 2024 - 15% rate</p>
+                <p className="text-sm text-muted-foreground">Total Declared</p>
+                <p className="text-2xl font-bold">{dividends.filter((d) => d.status !== "DRAFT").length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-success/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-success" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
+                <Banknote className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">YTD Dividends</p>
-                <p className="text-2xl font-bold">₦21.3M</p>
-                <p className="text-xs text-muted-foreground">2024 Total</p>
+                <p className="text-sm text-muted-foreground">Total Paid Out</p>
+                <p className="text-2xl font-bold">
+                  {totalPaidKobo > 0
+                    ? `₦${(totalPaidKobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+                    : "—"}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-warning/10 rounded-lg">
-                <Calculator className="h-5 w-5 text-warning" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Next Due</p>
-                <p className="text-2xl font-bold">Jun 30</p>
-                <p className="text-xs text-muted-foreground">Q1 2025 estimated</p>
+                <p className="text-sm text-muted-foreground">Latest Period</p>
+                <p className="text-lg font-bold">{dividends[0]?.period ?? "—"}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Dividend Management Tabs */}
+      {/* Dividend list */}
       <Card>
         <CardHeader>
-          <CardTitle>Dividend Operations</CardTitle>
+          <CardTitle>Dividend History</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="history" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="history">Dividend History</TabsTrigger>
-              <TabsTrigger value="calculator">Dividend Calculator</TabsTrigger>
-              <TabsTrigger value="entitlements">Member Entitlements</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="history">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Dividend History</h3>
-                </div>
-                
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Period</TableHead>
-                        <TableHead>Total Amount</TableHead>
-                        <TableHead>Rate</TableHead>
-                        <TableHead>Payout Date</TableHead>
-                        <TableHead>Members</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dividendHistory.map((dividend, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{dividend.period}</TableCell>
-                          <TableCell className="font-medium">{dividend.totalAmount}</TableCell>
-                          <TableCell>{dividend.rate}</TableCell>
-                          <TableCell>{dividend.payoutDate}</TableCell>
-                          <TableCell>{dividend.members.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={getStatusColor(dividend.status)}>
-                              {dividend.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="calculator">
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Calculation Inputs */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Dividend Calculation</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="totalProfit">Total Distributable Profit</Label>
-                        <Input id="totalProfit" placeholder="₦15,200,000" />
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : dividends.length === 0 ? (
+            <div className="flex flex-col items-center py-16 text-center gap-3 text-muted-foreground">
+              <TrendingUp className="h-10 w-10 opacity-20" />
+              <p className="font-medium">No dividends declared yet</p>
+              <p className="text-sm max-w-xs">
+                When you declare a dividend, it will appear here with a full breakdown per member.
+              </p>
+              <Button size="sm" className="mt-2" onClick={() => setDeclareOpen(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />Declare your first dividend
+              </Button>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {dividends.map((d) => (
+                <Collapsible
+                  key={d.id}
+                  open={expandedId === d.id}
+                  onOpenChange={(open) => setExpandedId(open ? d.id : null)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center gap-4 p-4 hover:bg-muted/30 cursor-pointer transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-foreground">{d.period}</span>
+                          <Badge variant="outline" className={STATUS_COLORS[d.status] ?? STATUS_COLORS.DRAFT}>
+                            {d.status.charAt(0) + d.status.slice(1).toLowerCase()}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />{d.eligibleMembers} members
+                          </span>
+                          <span>Rate: {d.ratePct.toFixed(2)}%</span>
+                          {d.qualificationDate && <span>Qualified by: {d.qualificationDate}</span>}
+                          {d.payoutDate && <span>Payout: {d.payoutDate}</span>}
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="dividendRate">Dividend Rate (%)</Label>
-                        <Input id="dividendRate" placeholder="16" />
+                      <div className="text-right shrink-0">
+                        <p className="font-bold text-foreground">{d.totalAmount}</p>
+                        <p className="text-xs text-muted-foreground">{d.declaredAt ?? d.createdAt}</p>
                       </div>
-                      <div>
-                        <Label htmlFor="totalShares">Total Share Capital</Label>
-                        <Input id="totalShares" placeholder="₦95,000,000" />
-                      </div>
-                      <Button className="w-full">
-                        <Calculator className="h-4 w-4 mr-2" />
-                        Calculate Entitlements
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* Calculation Summary */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Calculation Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Period:</span>
-                        <span className="font-medium">{upcomingDividend.period}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total Amount:</span>
-                        <span className="font-medium">{upcomingDividend.estimatedAmount}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Eligible Members:</span>
-                        <span className="font-medium">{upcomingDividend.eligibleMembers}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Rate:</span>
-                        <span className="font-medium">{upcomingDividend.proposedRate}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Target Date:</span>
-                        <span className="font-medium">{upcomingDividend.targetDate}</span>
-                      </div>
-                      <Button variant="outline" className="w-full mt-4">
-                        Preview Entitlements
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">Ready to Process?</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Once declared, dividend entitlements will be generated for all eligible members
-                        </p>
-                      </div>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Declare Dividend
-                      </Button>
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === d.id ? "rotate-180" : ""}`} />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="entitlements">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Member Entitlements - Q1 2025</h3>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Export List
-                    </Button>
-                    <Button size="sm">
-                      Process Payments
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Member ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Share Balance</TableHead>
-                        <TableHead>Entitlement</TableHead>
-                        <TableHead>Payment Method</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {memberEntitlements.map((member) => (
-                        <TableRow key={member.memberId}>
-                          <TableCell className="font-medium">{member.memberId}</TableCell>
-                          <TableCell>{member.name}</TableCell>
-                          <TableCell>{member.shareBalance}</TableCell>
-                          <TableCell className="font-medium">{member.entitlement}</TableCell>
-                          <TableCell>{member.paymentMethod}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={getStatusColor(member.status)}>
-                              {member.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button variant="ghost" size="sm">
-                                View
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                Process
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Showing 3 of 1,247 members
-                  </p>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" disabled>
-                      Previous
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <DividendEntitlementsRow dividendId={d.id} />
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <DeclareDividendDialog
+        open={declareOpen}
+        onClose={() => setDeclareOpen(false)}
+        onDeclared={refetch}
+      />
     </div>
   );
 };

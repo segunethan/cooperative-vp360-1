@@ -1,18 +1,19 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,536 +21,490 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Settings as SettingsIcon, 
-  Users, 
-  Shield, 
-  Plus, 
-  Edit,
-  Trash2,
+import {
+  Building2,
+  Users,
+  Shield,
   Key,
-  Bell,
-  Database
+  CheckCircle2,
+  AlertCircle,
+  Crown,
 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchCooperativeProfile,
+  fetchTenantUsers,
+  updateCooperativeProfile,
+  updateTenantUserRole,
+} from "@/lib/api/settings";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+
+const PLAN_COLORS: Record<string, string> = {
+  trial:      "bg-warning/10 text-warning border-warning/20",
+  starter:    "bg-primary/10 text-primary border-primary/20",
+  growth:     "bg-success/10 text-success border-success/20",
+  enterprise: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  admin:  "bg-primary/10 text-primary border-primary/20",
+  staff:  "bg-success/10 text-success border-success/20",
+  viewer: "bg-muted/10 text-muted-foreground border-border",
+};
 
 const Settings = () => {
-  const roles = [
-    {
-      name: "Super Admin",
-      description: "Full system access and control",
-      users: 2,
-      permissions: ["All Modules", "User Management", "System Configuration"],
-      status: "Active",
-    },
-    {
-      name: "Finance Officer",
-      description: "Manage contributions, dividends, and financial reports",
-      users: 3,
-      permissions: ["Contributions", "Dividends", "Reports", "Members (Read)"],
-      status: "Active",
-    },
-    {
-      name: "Loan Officer",
-      description: "Manage loan applications and portfolio",
-      users: 2,
-      permissions: ["Loans", "Members (Read)", "Reports (Loans)"],
-      status: "Active",
-    },
-    {
-      name: "Communications Officer",
-      description: "Handle member communications and announcements",
-      users: 1,
-      permissions: ["Announcements", "Members (Read)"],
-      status: "Active",
-    },
-    {
-      name: "Auditor",
-      description: "Read-only access to reports and audit trails",
-      users: 1,
-      permissions: ["Reports (Read-only)", "Audit Trail (Read-only)"],
-      status: "Active",
-    },
-  ];
+  const { user, tenant } = useAuth();
+  const queryClient = useQueryClient();
+  const tenantId = tenant?.id ?? "";
 
-  const users = [
-    {
-      name: "John Admin",
-      email: "john@greenpole.com",
-      role: "Super Admin",
-      lastLogin: "Jan 08, 2025 14:32",
-      status: "Active",
-    },
-    {
-      name: "Sarah Finance",
-      email: "sarah@greenpole.com", 
-      role: "Finance Officer",
-      lastLogin: "Jan 08, 2025 12:15",
-      status: "Active",
-    },
-    {
-      name: "Mike Loans",
-      email: "mike@greenpole.com",
-      role: "Loan Officer", 
-      lastLogin: "Jan 07, 2025 16:45",
-      status: "Active",
-    },
-    {
-      name: "Lisa Communications",
-      email: "lisa@greenpole.com",
-      role: "Communications Officer",
-      lastLogin: "Jan 07, 2025 09:30",
-      status: "Inactive",
-    },
-  ];
+  // ── Cooperative Profile ──────────────────────────────────────────────────────
+  const { data: profile, isLoading: loadingProfile } = useQuery({
+    queryKey: ["cooperative-profile", tenantId],
+    queryFn: () => fetchCooperativeProfile(tenantId),
+    enabled: !!tenantId,
+  });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-success/10 text-success border-success/20";
-      case "Inactive":
-        return "bg-warning/10 text-warning border-warning/20";
-      case "Suspended":
-        return "bg-destructive/10 text-destructive border-destructive/20";
-      default:
-        return "bg-muted/10 text-muted-foreground border-border";
+  const [profileForm, setProfileForm] = useState({
+    name: "", email: "", phone: "", address: "", rcNumber: "",
+  });
+
+  // Populate form once profile loads
+  useEffect(() => {
+    if (profile) {
+      setProfileForm({
+        name:     profile.name,
+        email:    profile.email,
+        phone:    profile.phone ?? "",
+        address:  profile.address ?? "",
+        rcNumber: profile.rcNumber ?? "",
+      });
     }
-  };
+  }, [profile]);
+
+  const profileDirty =
+    profile &&
+    (profileForm.name     !== profile.name     ||
+     profileForm.email    !== profile.email    ||
+     profileForm.phone    !== (profile.phone ?? "")    ||
+     profileForm.address  !== (profile.address ?? "")  ||
+     profileForm.rcNumber !== (profile.rcNumber ?? ""));
+
+  const saveMutation = useMutation({
+    mutationFn: () => updateCooperativeProfile(tenantId, profileForm),
+    onSuccess: () => {
+      toast.success("Cooperative profile updated.");
+      queryClient.invalidateQueries({ queryKey: ["cooperative-profile", tenantId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // ── Team Members ─────────────────────────────────────────────────────────────
+  const { data: teamMembers = [], isLoading: loadingTeam } = useQuery({
+    queryKey: ["tenant-users", tenantId],
+    queryFn: () => fetchTenantUsers(tenantId),
+    enabled: !!tenantId,
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      updateTenantUserRole(id, role),
+    onSuccess: () => {
+      toast.success("Role updated.");
+      queryClient.invalidateQueries({ queryKey: ["tenant-users", tenantId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Trial expiry info
+  const trialDaysLeft = profile?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(profile.trialEndsAt).getTime() - Date.now()) / 86_400_000))
+    : null;
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">System Settings</h1>
-          <p className="text-muted-foreground">Configure roles, permissions, and system preferences</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Database className="h-4 w-4 mr-2" />
-            Backup Data
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
-          </Button>
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground">Manage your cooperative profile and team access</p>
       </div>
 
-      {/* Settings Tabs */}
-      <Card>
-        <CardContent className="p-6">
-          <Tabs defaultValue="roles" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
-              <TabsTrigger value="users">User Management</TabsTrigger>
-              <TabsTrigger value="system">System Settings</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-            </TabsList>
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="profile">
+            <Building2 className="h-4 w-4 mr-1.5" />Cooperative Profile
+          </TabsTrigger>
+          <TabsTrigger value="team">
+            <Users className="h-4 w-4 mr-1.5" />Team
+          </TabsTrigger>
+          <TabsTrigger value="roles">
+            <Shield className="h-4 w-4 mr-1.5" />Roles
+          </TabsTrigger>
+          <TabsTrigger value="security">
+            <Key className="h-4 w-4 mr-1.5" />Security
+          </TabsTrigger>
+        </TabsList>
 
-            <TabsContent value="roles" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Role Management</h3>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Role
-                </Button>
-              </div>
+        {/* ── Cooperative Profile ── */}
+        <TabsContent value="profile" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+            {/* Edit form */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Cooperative Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {loadingProfile ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-9 w-full" />
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      {/* Cooperative ID — read-only, system-assigned */}
+                      {profile?.cooperativeNumber && (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Cooperative ID</p>
+                            <p className="font-mono font-bold text-lg text-foreground tracking-wider">{profile.cooperativeNumber}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">System-assigned · cannot be changed</p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label>Cooperative Name *</Label>
+                          <Input
+                            value={profileForm.name}
+                            onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>URL Slug</Label>
+                          <Input value={profile?.slug ?? ""} disabled className="font-mono text-sm" />
+                          <p className="text-xs text-muted-foreground">Contact support to change your slug.</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Contact Email *</Label>
+                        <Input
+                          type="email"
+                          value={profileForm.email}
+                          onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Phone Number</Label>
+                        <Input
+                          type="tel"
+                          placeholder="+234 800 000 0000"
+                          value={profileForm.phone}
+                          onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Registered Address</Label>
+                        <Input
+                          placeholder="e.g. 12 Marina Rd, Lagos Island, Lagos"
+                          value={profileForm.address}
+                          onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>CAC Registration Number (RC Number)</Label>
+                        <Input
+                          placeholder="e.g. RC-1234567"
+                          value={profileForm.rcNumber}
+                          onChange={(e) => setProfileForm({ ...profileForm, rcNumber: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          disabled={!profileDirty || saveMutation.isPending}
+                          onClick={() => saveMutation.mutate()}
+                        >
+                          {saveMutation.isPending ? "Saving…" : "Save Changes"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Sidebar — plan + status */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                    Billing Plan
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loadingProfile ? (
+                    <Skeleton className="h-8 w-full" />
+                  ) : (
+                    <>
+                      <Badge
+                        variant="outline"
+                        className={PLAN_COLORS[profile?.billingPlan ?? "trial"] + " text-sm px-3 py-1"}
+                      >
+                        {(profile?.billingPlan ?? "trial").charAt(0).toUpperCase() +
+                          (profile?.billingPlan ?? "trial").slice(1)} Plan
+                      </Badge>
+
+                      {profile?.billingPlan === "trial" && trialDaysLeft !== null && (
+                        <div className={`flex items-start gap-2 rounded-md border p-3 text-sm ${
+                          trialDaysLeft <= 5
+                            ? "border-destructive/30 bg-destructive/10 text-destructive"
+                            : "border-warning/30 bg-warning/10 text-warning-foreground"
+                        }`}>
+                          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                          <span>
+                            {trialDaysLeft === 0
+                              ? "Trial has expired."
+                              : `${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left on your trial.`}
+                          </span>
+                        </div>
+                      )}
+
+                      <Button className="w-full" size="sm" variant="outline">
+                        Upgrade Plan
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Account Status</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loadingProfile ? (
+                    <Skeleton className="h-6 w-full" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <span className="text-sm font-medium capitalize">
+                        {(profile?.status ?? "").toLowerCase().replace(/_/g, " ")}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Your cooperative account is in good standing.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Team ── */}
+        <TabsContent value="team" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium">Team Members</h3>
+              <p className="text-sm text-muted-foreground">People with access to this cooperative's dashboard.</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
               <div className="border rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Role Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Users</TableHead>
-                      <TableHead>Key Permissions</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {roles.map((role, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{role.name}</TableCell>
-                        <TableCell className="max-w-xs">
-                          <p className="text-sm">{role.description}</p>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{role.users}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {role.permissions.slice(0, 2).map((permission) => (
-                              <Badge key={permission} variant="outline" className="text-xs">
-                                {permission}
-                              </Badge>
-                            ))}
-                            {role.permissions.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{role.permissions.length - 2} more
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={getStatusColor(role.status)}>
-                            {role.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="users" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">User Accounts</h3>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add User
-                </Button>
-              </div>
-
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Last Login</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead>Change Role</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{user.role}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{user.lastLogin}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={getStatusColor(user.status)}>
-                            {user.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Key className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                    {loadingTeam ? (
+                      Array.from({ length: 2 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: 4 }).map((_, j) => (
+                            <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : teamMembers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4}>
+                          <div className="flex flex-col items-center py-8 text-center text-muted-foreground">
+                            <Users className="h-8 w-8 mb-2 opacity-30" />
+                            <p className="text-sm">No team members found.</p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      teamMembers.map((member) => {
+                        const isCurrentUser = member.userId === user?.id;
+                        return (
+                          <TableRow key={member.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {isCurrentUser ? user?.email : "Team member"}
+                                </p>
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  {member.userId.slice(0, 8)}…
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={ROLE_COLORS[member.role] ?? ""}>
+                                {member.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {member.joinedAt}
+                            </TableCell>
+                            <TableCell>
+                              {isCurrentUser ? (
+                                <span className="text-xs text-muted-foreground">You</span>
+                              ) : (
+                                <Select
+                                  value={member.role}
+                                  onValueChange={(role) =>
+                                    roleMutation.mutate({ id: member.id, role })
+                                  }
+                                  disabled={roleMutation.isPending}
+                                >
+                                  <SelectTrigger className="w-28 h-7 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                    <SelectItem value="viewer">Viewer</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </div>
-            </TabsContent>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <TabsContent value="system" className="space-y-6">
-              <h3 className="text-lg font-medium">System Configuration</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* General Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">General Settings</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="orgName">Organization Name</Label>
-                      <Input id="orgName" defaultValue="GreenPole Cooperative Society" />
-                    </div>
-                    <div>
-                      <Label htmlFor="currency">Default Currency</Label>
-                      <Select defaultValue="ngn">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ngn">Nigerian Naira (₦)</SelectItem>
-                          <SelectItem value="usd">US Dollar ($)</SelectItem>
-                          <SelectItem value="eur">Euro (€)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="timezone">Timezone</Label>
-                      <Select defaultValue="wat">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="wat">West Africa Time (WAT)</SelectItem>
-                          <SelectItem value="utc">UTC</SelectItem>
-                          <SelectItem value="est">Eastern Time (EST)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
+        {/* ── Roles (informational) ── */}
+        <TabsContent value="roles" className="space-y-4">
+          <h3 className="text-lg font-medium">Roles & Permissions</h3>
+          <p className="text-sm text-muted-foreground">
+            Roles control what each team member can see and do inside the dashboard.
+          </p>
 
-                {/* Notification Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center">
-                      <Bell className="h-4 w-4 mr-2" />
-                      Notifications
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Email Notifications</Label>
-                        <p className="text-sm text-muted-foreground">Send email notifications to admins</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>SMS Notifications</Label>
-                        <p className="text-sm text-muted-foreground">Send SMS for critical alerts</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Audit Logging</Label>
-                        <p className="text-sm text-muted-foreground">Log all system activities</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                  </CardContent>
-                </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                role: "Admin",
+                color: "primary",
+                description: "Full access to all modules including settings, user management, and financial operations.",
+                permissions: ["All Modules", "Add & Remove Users", "Update Profile", "Approve Loans", "Manage Contributions"],
+              },
+              {
+                role: "Staff",
+                color: "success",
+                description: "Operational access to day-to-day functions. Cannot change settings or manage users.",
+                permissions: ["Members", "Contributions", "Loans", "Announcements", "Reports (Read)"],
+              },
+              {
+                role: "Viewer",
+                color: "muted-foreground",
+                description: "Read-only access to the dashboard. Cannot create, update, or delete any records.",
+                permissions: ["Dashboard (Read)", "Members (Read)", "Reports (Read)"],
+              },
+            ].map(({ role, color, description, permissions }) => (
+              <Card key={role}>
+                <CardHeader className="pb-2">
+                  <CardTitle className={`text-base text-${color}`}>{role}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                  <ul className="space-y-1.5">
+                    {permissions.map((p) => (
+                      <li key={p} className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
-                {/* Business Rules */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Business Rules</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="minContribution">Minimum Monthly Contribution</Label>
-                      <Input id="minContribution" defaultValue="₦5,000" />
-                    </div>
-                    <div>
-                      <Label htmlFor="maxLoan">Maximum Loan Amount</Label>
-                      <Input id="maxLoan" defaultValue="₦2,000,000" />
-                    </div>
-                    <div>
-                      <Label htmlFor="dividendFreq">Dividend Frequency</Label>
-                      <Select defaultValue="quarterly">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                          <SelectItem value="annually">Annually</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
+        {/* ── Security ── */}
+        <TabsContent value="security" className="space-y-4">
+          <h3 className="text-lg font-medium">Security</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Password & Authentication
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Authentication is managed by Supabase. Password resets are sent via email.
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    const { supabase: sb } = await import("@/lib/supabase");
+                    await sb.auth.resetPasswordForEmail(user?.email ?? "", {
+                      redirectTo: `${window.location.origin}/cooperative`,
+                    });
+                    toast.success("Password reset email sent.");
+                  }}
+                >
+                  Send Password Reset Email
+                </Button>
+              </CardContent>
+            </Card>
 
-                {/* System Maintenance */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">System Maintenance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Maintenance Mode</Label>
-                        <p className="text-sm text-muted-foreground">Enable for system updates</p>
-                      </div>
-                      <Switch />
-                    </div>
-                    <div>
-                      <Label htmlFor="backupFreq">Auto Backup Frequency</Label>
-                      <Select defaultValue="daily">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="hourly">Hourly</SelectItem>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button variant="outline" className="w-full">
-                      <Database className="h-4 w-4 mr-2" />
-                      Backup Now
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline">Reset to Default</Button>
-                <Button>Save Changes</Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="security" className="space-y-6">
-              <h3 className="text-lg font-medium">Security Configuration</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Password Policy */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center">
-                      <Key className="h-4 w-4 mr-2" />
-                      Password Policy
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="minLength">Minimum Password Length</Label>
-                      <Input id="minLength" type="number" defaultValue="8" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Require Uppercase</Label>
-                        <p className="text-sm text-muted-foreground">At least one uppercase letter</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Require Numbers</Label>
-                        <p className="text-sm text-muted-foreground">At least one number</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Require Special Characters</Label>
-                        <p className="text-sm text-muted-foreground">At least one special character</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Session Management */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Session Management</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
-                      <Input id="sessionTimeout" type="number" defaultValue="30" />
-                    </div>
-                    <div>
-                      <Label htmlFor="maxSessions">Max Concurrent Sessions</Label>
-                      <Input id="maxSessions" type="number" defaultValue="3" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Auto-logout Inactive Users</Label>
-                        <p className="text-sm text-muted-foreground">Logout after timeout period</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Two-Factor Authentication</Label>
-                        <p className="text-sm text-muted-foreground">Require 2FA for all users</p>
-                      </div>
-                      <Switch />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Access Control */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Access Control</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="ipWhitelist">IP Whitelist</Label>
-                      <Input id="ipWhitelist" placeholder="192.168.1.0/24" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Failed Login Protection</Label>
-                        <p className="text-sm text-muted-foreground">Lock account after failed attempts</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div>
-                      <Label htmlFor="lockoutAttempts">Max Failed Attempts</Label>
-                      <Input id="lockoutAttempts" type="number" defaultValue="5" />
-                    </div>
-                    <div>
-                      <Label htmlFor="lockoutDuration">Lockout Duration (minutes)</Label>
-                      <Input id="lockoutDuration" type="number" defaultValue="15" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Audit Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Audit & Monitoring</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Log Login Attempts</Label>
-                        <p className="text-sm text-muted-foreground">Record all login attempts</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Log Data Changes</Label>
-                        <p className="text-sm text-muted-foreground">Track all data modifications</p>
-                      </div>
-                      <Switch defaultChecked />
-                    </div>
-                    <div>
-                      <Label htmlFor="logRetention">Log Retention Period (days)</Label>
-                      <Input id="logRetention" type="number" defaultValue="365" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline">Reset Security Settings</Button>
-                <Button>Update Security Policy</Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Session
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm space-y-1">
+                  <p className="text-muted-foreground">Signed in as</p>
+                  <p className="font-medium">{user?.email}</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sessions are managed by Supabase Auth and expire automatically.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,7 +1,26 @@
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -9,66 +28,101 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  PiggyBank, 
-  TrendingUp, 
-  Calendar, 
-  Plus, 
+import {
+  PiggyBank,
+  TrendingUp,
+  Calendar,
+  Plus,
   Download,
-  Filter
+  PiggyBankIcon,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { fetchAllContributions, recordMemberContribution, markContributionAsCompleted, markContributionAsFailed } from "@/lib/api/contributions";
+import { formatMoney } from "@/lib/money";
+
+const EMPTY_FORM = { memberId: "", amount: "", channel: "", notes: "" };
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Completed": return "bg-success/10 text-success border-success/20";
+    case "Pending":   return "bg-warning/10 text-warning border-warning/20";
+    case "Failed":    return "bg-destructive/10 text-destructive border-destructive/20";
+    default:          return "bg-muted/10 text-muted-foreground border-border";
+  }
+};
 
 const Contributions = () => {
-  const contributions = [
-    {
-      date: "Jan 08, 2025",
-      member: "John Doe",
-      memberId: "MEM-001",
-      amount: "₦25,000",
-      channel: "Bank Transfer",
-      status: "Completed",
-      reference: "TXN-20250108-001",
-    },
-    {
-      date: "Jan 07, 2025", 
-      member: "Sarah Wilson",
-      memberId: "MEM-002",
-      amount: "₦15,000",
-      channel: "Mobile Money",
-      status: "Completed", 
-      reference: "TXN-20250107-002",
-    },
-    {
-      date: "Jan 06, 2025",
-      member: "Emily Brown", 
-      memberId: "MEM-004",
-      amount: "₦30,000",
-      channel: "Cash Deposit",
-      status: "Pending",
-      reference: "TXN-20250106-003",
-    },
-    {
-      date: "Jan 05, 2025",
-      member: "Michael Johnson",
-      memberId: "MEM-003", 
-      amount: "₦20,000",
-      channel: "Bank Transfer",
-      status: "Failed",
-      reference: "TXN-20250105-004",
-    },
-  ];
+  const { toast } = useToast();
+  const { tenant } = useAuth();
+  const queryClient = useQueryClient();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Completed":
-        return "bg-success/10 text-success border-success/20";
-      case "Pending":
-        return "bg-warning/10 text-warning border-warning/20";
-      case "Failed":
-        return "bg-destructive/10 text-destructive border-destructive/20";
-      default:
-        return "bg-muted/10 text-muted-foreground border-border";
-    }
+  const [recordOpen, setRecordOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // ── Data ─────────────────────────────────────────────────────────────────
+  const { data: contributions = [], isLoading } = useQuery({
+    queryKey: ["contributions"],
+    queryFn: fetchAllContributions,
+    enabled: !!tenant,
+  });
+
+  const ytdTotal = useMemo(
+    () => contributions.filter((c) => c.status === "Completed").reduce((s, c) => s + c.amountKobo, 0),
+    [contributions]
+  );
+
+  const thisMonth = new Date().toLocaleString("default", { month: "long", year: "numeric" });
+
+  // ── Mutation ──────────────────────────────────────────────────────────────
+  const recordMutation = useMutation({
+    mutationFn: recordMemberContribution,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contributions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      toast({ title: "Contribution Recorded", description: "Entry is pending verification." });
+      setRecordOpen(false);
+      setForm(EMPTY_FORM);
+      setFormError(null);
+    },
+    onError: (err: Error) => setFormError(err.message),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: markContributionAsCompleted,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contributions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      toast({ title: "Contribution Approved", description: "Marked as completed." });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: markContributionAsFailed,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contributions"] });
+      toast({ title: "Contribution Rejected", description: "Marked as failed." });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const handleRecord = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!tenant?.id) return;
+    if (!form.memberId.trim()) { setFormError("Enter a member ID (e.g. MEM-001)"); return; }
+    if (!form.amount || parseFloat(form.amount) <= 0) { setFormError("Enter a valid amount in naira"); return; }
+    if (!form.channel) { setFormError("Select a payment channel"); return; }
+
+    recordMutation.mutate({
+      tenantId: tenant.id,
+      memberNumber: form.memberId.trim().toUpperCase(),
+      amountNaira: parseFloat(form.amount),
+      channel: form.channel,
+      notes: form.notes || undefined,
+    });
   };
 
   return (
@@ -84,7 +138,7 @@ const Contributions = () => {
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setRecordOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Record Contribution
           </Button>
@@ -101,7 +155,9 @@ const Contributions = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Contributions</p>
-                <p className="text-2xl font-bold">₦45.2M</p>
+                {isLoading ? <Skeleton className="h-7 w-24 mt-1" /> : (
+                  <p className="text-2xl font-bold">{formatMoney(ytdTotal)}</p>
+                )}
                 <p className="text-xs text-muted-foreground">Year to Date</p>
               </div>
             </div>
@@ -115,9 +171,11 @@ const Contributions = () => {
                 <TrendingUp className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Monthly Growth</p>
-                <p className="text-2xl font-bold">+8.5%</p>
-                <p className="text-xs text-muted-foreground">vs last month</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Entries</p>
+                {isLoading ? <Skeleton className="h-7 w-16 mt-1" /> : (
+                  <p className="text-2xl font-bold">{contributions.length}</p>
+                )}
+                <p className="text-xs text-muted-foreground">All time</p>
               </div>
             </div>
           </CardContent>
@@ -130,9 +188,11 @@ const Contributions = () => {
                 <Calendar className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold">₦3.8M</p>
-                <p className="text-xs text-muted-foreground">January 2025</p>
+                <p className="text-sm font-medium text-muted-foreground">Pending Verification</p>
+                {isLoading ? <Skeleton className="h-7 w-12 mt-1" /> : (
+                  <p className="text-2xl font-bold">{contributions.filter((c) => c.status === "Pending").length}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Awaiting approval</p>
               </div>
             </div>
           </CardContent>
@@ -142,18 +202,10 @@ const Contributions = () => {
       {/* Contributions Ledger */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Contribution Ledger</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
-            </div>
-          </div>
+          <CardTitle>Contribution Ledger</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -167,59 +219,180 @@ const Contributions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contributions.map((contribution, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{contribution.date}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{contribution.member}</p>
-                        <p className="text-sm text-muted-foreground">{contribution.memberId}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{contribution.amount}</TableCell>
-                    <TableCell>{contribution.channel}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getStatusColor(contribution.status)}>
-                        {contribution.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {contribution.reference}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
-                          View
-                        </Button>
-                        {contribution.status === "Pending" && (
-                          <Button variant="ghost" size="sm">
-                            Approve
-                          </Button>
-                        )}
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 7 }).map((_, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : contributions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                          <PiggyBank className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">No contributions yet</p>
+                          <p className="text-sm text-muted-foreground mt-1">Record your first contribution to get started.</p>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  contributions.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="text-sm">{c.date}</TableCell>
+                      <TableCell>
+                        <p className="font-medium">{c.member}</p>
+                        <p className="text-xs text-muted-foreground">{c.memberId}</p>
+                      </TableCell>
+                      <TableCell className="font-medium">{c.amount}</TableCell>
+                      <TableCell className="text-sm">{c.channel}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusColor(c.status)}>
+                          {c.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono truncate max-w-[140px]">
+                        {c.reference}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1">
+                          {c.status === "Pending" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-success hover:text-success"
+                                disabled={approveMutation.isPending || rejectMutation.isPending}
+                                onClick={() => approveMutation.mutate(c.id)}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                disabled={approveMutation.isPending || rejectMutation.isPending}
+                                onClick={() => rejectMutation.mutate(c.id)}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {c.status !== "Pending" && (
+                            <Button variant="ghost" size="sm">View</Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              Showing 4 of 247 contributions
-            </p>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
+          {!isLoading && contributions.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {contributions.length} contribution{contributions.length !== 1 ? "s" : ""}
+              </p>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Record Contribution Dialog */}
+      <Dialog open={recordOpen} onOpenChange={(o) => { setRecordOpen(o); if (!o) { setForm(EMPTY_FORM); setFormError(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PiggyBank className="h-5 w-5 text-primary" />
+              Record Contribution
+            </DialogTitle>
+            <DialogDescription>
+              Manually record a member contribution for cash deposits or offline bank transfers.
+            </DialogDescription>
+          </DialogHeader>
+
+          {formError && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+              {formError}
+            </div>
+          )}
+
+          <form onSubmit={handleRecord} className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="rc-member">Member ID</Label>
+              <Input
+                id="rc-member"
+                placeholder="MEM-001"
+                value={form.memberId}
+                onChange={(e) => setForm({ ...form, memberId: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="rc-amount">Amount (₦)</Label>
+              <Input
+                id="rc-amount"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="25000"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="rc-channel">Payment Channel</Label>
+              <Select value={form.channel} onValueChange={(v) => setForm({ ...form, channel: v })}>
+                <SelectTrigger id="rc-channel"><SelectValue placeholder="Select channel" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="cash">Cash Deposit</SelectItem>
+                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="paystack">Paystack</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="rc-notes">Notes (optional)</Label>
+              <Input
+                id="rc-notes"
+                placeholder="Reference number, slip ID…"
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setRecordOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={recordMutation.isPending}
+              >
+                {recordMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    Recording…
+                  </span>
+                ) : (
+                  "Record Contribution"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

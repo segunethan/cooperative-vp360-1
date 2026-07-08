@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +20,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Download, Filter } from "lucide-react";
+import { Search, Download, Filter, Users } from "lucide-react";
 import MemberActions from "./MemberActions";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface Member {
   id: string;
@@ -43,6 +45,8 @@ interface MemberDirectoryProps {
   onExit: (id: string) => void;
   onEdit: (id: string) => void;
   onVerifyKYC: (id: string) => void;
+  onResendInvite?: (id: string) => void;
+  loading?: boolean;
 }
 
 const getStatusColor = (status: string) => {
@@ -60,8 +64,9 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const MemberDirectory = ({ members, onApprove, onSuspend, onExit, onEdit, onVerifyKYC }: MemberDirectoryProps) => {
+const MemberDirectory = ({ members, onApprove, onSuspend, onExit, onEdit, onVerifyKYC, onResendInvite, loading = false }: MemberDirectoryProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -167,10 +172,32 @@ const MemberDirectory = ({ members, onApprove, onSuspend, onExit, onEdit, onVeri
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedMembers.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 11 }).map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paginatedMembers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                    No members found matching your criteria.
+                  <TableCell colSpan={11} className="py-16">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <Users className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">No members found</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {searchQuery || statusFilter !== "all"
+                            ? "Try adjusting your search or filters."
+                            : "Add your first member to get started."}
+                        </p>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -183,8 +210,11 @@ const MemberDirectory = ({ members, onApprove, onSuspend, onExit, onEdit, onVeri
                       />
                     </TableCell>
                     <TableCell className="font-mono text-xs">{member.id}</TableCell>
-                    <TableCell>
-                      <p className="font-medium text-foreground">{member.name}</p>
+                    <TableCell
+                      className="cursor-pointer group"
+                      onClick={() => navigate(`/cooperative/members/${member.id}`)}
+                    >
+                      <p className="font-medium text-foreground group-hover:text-primary transition-colors">{member.name}</p>
                       <p className="text-xs text-muted-foreground">{member.email}</p>
                     </TableCell>
                     <TableCell className="text-sm">{member.phone}</TableCell>
@@ -218,6 +248,7 @@ const MemberDirectory = ({ members, onApprove, onSuspend, onExit, onEdit, onVeri
                         onExit={onExit}
                         onEdit={onEdit}
                         onVerifyKYC={onVerifyKYC}
+                        onResendInvite={onResendInvite}
                       />
                     </TableCell>
                   </TableRow>

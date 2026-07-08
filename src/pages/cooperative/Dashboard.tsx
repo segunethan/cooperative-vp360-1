@@ -1,88 +1,111 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Users, 
-  PiggyBank, 
-  CreditCard, 
-  DollarSign, 
-  UserPlus, 
-  TrendingUp, 
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Users,
+  PiggyBank,
+  CreditCard,
+  DollarSign,
   AlertTriangle,
   Calendar
 } from "lucide-react";
 import { MetricCard } from "@/components/cooperative/MetricCard";
 import { ActivityFeed } from "@/components/cooperative/ActivityFeed";
 import { QuickActions } from "@/components/cooperative/QuickActions";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
+import { fetchDashboardMetrics, fetchRecentActivity } from "@/lib/api/dashboard";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 const Dashboard = () => {
-  const metrics = [
+  const { tenant } = useAuth();
+
+  const { data: metrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ["dashboard-metrics"],
+    queryFn: fetchDashboardMetrics,
+    enabled: !!tenant,
+    staleTime: 60_000,
+  });
+
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ["dashboard-activity"],
+    queryFn: fetchRecentActivity,
+    enabled: !!tenant,
+    staleTime: 30_000,
+  });
+
+  const metricCards = [
     {
       title: "Total Members",
-      value: "1,247",
-      subtitle: "Active: 1,205 • Pending: 25 • Exited: 17",
+      value: metricsLoading ? "—" : String(metrics?.totalMembers ?? 0),
+      subtitle: metricsLoading ? "Loading…" : `Active: ${metrics?.activeMembers ?? 0} • Pending: ${metrics?.pendingMembers ?? 0} • Exited: ${metrics?.exitedMembers ?? 0}`,
       icon: Users,
-      trend: "+12%",
+      trend: "+0%",
       trendDirection: "up" as const,
     },
     {
       title: "Contributions Collected",
-      value: "₦45.2M",
-      subtitle: "YTD: ₦45.2M • MTD: ₦3.8M",
+      value: metricsLoading ? "—" : (metrics?.totalContributionsYtd ?? "₦0"),
+      subtitle: metricsLoading ? "Loading…" : `YTD: ${metrics?.totalContributionsYtd ?? "₦0"} • MTD: ${metrics?.mtdContributions ?? "₦0"}`,
       icon: PiggyBank,
-      trend: "+8.5%",
+      trend: "+0%",
       trendDirection: "up" as const,
     },
     {
       title: "Loans Outstanding",
-      value: "₦28.7M",
-      subtitle: "Active: ₦28.7M • Delinquent: 2.3%",
+      value: metricsLoading ? "—" : (metrics?.outstandingLoans ?? "₦0"),
+      subtitle: metricsLoading ? "Loading…" : `Active portfolio: ${metrics?.outstandingLoans ?? "₦0"}`,
       icon: CreditCard,
-      trend: "-1.2%",
+      trend: "0%",
       trendDirection: "down" as const,
     },
     {
       title: "Dividends Paid",
-      value: "₦12.5M",
-      subtitle: "Last: Dec 2024 • Next: Jun 2025",
+      value: metricsLoading ? "—" : (metrics?.dividendsPaid ?? "₦0"),
+      subtitle: "Cumulative all time",
       icon: DollarSign,
-      trend: "+15%",
+      trend: "+0%",
       trendDirection: "up" as const,
     },
   ];
 
-  const recentActivities = [
-    {
-      type: "contribution",
-      message: "John Doe contributed ₦50,000",
-      time: "2 hours ago",
-      status: "completed" as const,
-    },
-    {
-      type: "loan",
-      message: "Loan application #LA-2024-0156 pending approval",
-      time: "4 hours ago",
-      status: "pending" as const,
-    },
-    {
-      type: "member",
-      message: "New member Sarah Wilson registered",
-      time: "6 hours ago",
-      status: "completed" as const,
-    },
-    {
-      type: "announcement",
-      message: "AGM Notice posted to all members",
-      time: "1 day ago",
-      status: "completed" as const,
-    },
-    {
-      type: "dividend",
-      message: "Dividend calculation completed for Q4 2024",
-      time: "2 days ago",
-      status: "completed" as const,
-    },
+  const contributionData = [
+    { month: "Jan", amount: 6200000 },
+    { month: "Feb", amount: 5800000 },
+    { month: "Mar", amount: 7100000 },
+    { month: "Apr", amount: 6500000 },
+    { month: "May", amount: 8400000 },
+    { month: "Jun", amount: 7900000 },
   ];
+
+  const loanPortfolioData = [
+    { name: "Personal Loans", value: 14200000, color: "hsl(42 55% 55%)" },
+    { name: "Business Loans", value: 9800000, color: "hsl(42 55% 40%)" },
+    { name: "Emergency Loans", value: 3100000, color: "hsl(42 55% 70%)" },
+    { name: "Education Loans", value: 1600000, color: "hsl(0 0% 75%)" },
+  ];
+
+  const formatNaira = (value: number) =>
+    `₦${(value / 1000000).toFixed(1)}M`;
+
+  const recentActivities = recentActivity.length > 0
+    ? recentActivity
+    : [
+        { id: "placeholder", type: "member" as const, message: "No recent activity yet — add members and record contributions to see activity here.", time: "now", status: "pending" as const },
+      ];
 
   return (
     <div className="space-y-6">
@@ -102,9 +125,96 @@ const Dashboard = () => {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <MetricCard key={index} {...metric} />
-        ))}
+        {metricsLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}><CardContent className="p-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
+            ))
+          : metricCards.map((metric, index) => (
+              <MetricCard key={index} {...metric} />
+            ))}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Contributions Bar Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Monthly Contributions</CardTitle>
+            <p className="text-xs text-muted-foreground">Jan – Jun 2025</p>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={contributionData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={formatNaira}
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatNaira(value), "Contributions"]}
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                  cursor={{ fill: "hsl(var(--muted))" }}
+                />
+                <Bar dataKey="amount" fill="hsl(42 55% 55%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Loan Portfolio Donut */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">Loan Portfolio</CardTitle>
+            <p className="text-xs text-muted-foreground">₦28.7M outstanding</p>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={loanPortfolioData}
+                  cx="50%"
+                  cy="45%"
+                  innerRadius={55}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {loanPortfolioData.map((entry, index) => (
+                    <Cell key={index} fill={entry.color} stroke="none" />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => [formatNaira(value)]}
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Main Content Grid */}

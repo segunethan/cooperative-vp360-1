@@ -5,14 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
+import { Skeleton } from "@/components/ui/skeleton";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,95 +21,97 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Megaphone, 
-  Users, 
-  Mail, 
-  MessageCircle, 
-  Plus, 
-  Send,
-  Eye,
-  Edit
-} from "lucide-react";
+import { Megaphone, Users, Mail, MessageCircle, Send, Eye } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchAllAnnouncements,
+  publishAnnouncement,
+  saveAnnouncementAsDraft,
+} from "@/lib/api/announcements";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+
+const EMPTY_FORM = {
+  title: "",
+  content: "",
+  category: "",
+  audience: "",
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Delivered": return "bg-success/10 text-success border-success/20";
+    case "Scheduled": return "bg-primary/10 text-primary border-primary/20";
+    case "Draft":     return "bg-warning/10 text-warning border-warning/20";
+    case "Failed":    return "bg-destructive/10 text-destructive border-destructive/20";
+    default:          return "bg-muted/10 text-muted-foreground border-border";
+  }
+};
+
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case "AGM":     return "bg-primary/10 text-primary border-primary/20";
+    case "PRODUCT": return "bg-success/10 text-success border-success/20";
+    case "SYSTEM":  return "bg-warning/10 text-warning border-warning/20";
+    default:        return "bg-muted/10 text-muted-foreground border-border";
+  }
+};
 
 const Announcements = () => {
-  const [announcementForm, setAnnouncementForm] = useState({
-    title: "",
-    content: "",
-    category: "",
-    audience: "",
-    channels: [],
-    schedule: "immediate"
+  const { user, tenant } = useAuth();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  const { data: announcements = [], isLoading } = useQuery({
+    queryKey: ["announcements"],
+    queryFn: fetchAllAnnouncements,
   });
 
-  const announcements = [
-    {
-      id: "ANN-2025-001",
-      title: "Annual General Meeting Notice",
-      category: "AGM",
-      content: "Notice of Annual General Meeting scheduled for February 15, 2025...",
-      audience: "All Members",
-      channels: ["Portal", "Email", "SMS"],
-      status: "Delivered",
-      sentDate: "Jan 08, 2025",
-      deliveryRate: "98.5%",
-      openRate: "76.2%",
-    },
-    {
-      id: "ANN-2025-002", 
-      title: "New Loan Product Launch",
-      category: "Product",
-      content: "We are excited to announce the launch of our new Education Loan product...",
-      audience: "All Members",
-      channels: ["Portal", "Email"],
-      status: "Scheduled",
-      sentDate: "Jan 15, 2025",
-      deliveryRate: "-",
-      openRate: "-",
-    },
-    {
-      id: "ANN-2025-003",
-      title: "System Maintenance Notice",
-      category: "System",
-      content: "Scheduled system maintenance on January 20, 2025 from 2:00 AM to 4:00 AM...",
-      audience: "All Members", 
-      channels: ["Portal", "Push"],
-      status: "Draft",
-      sentDate: "-",
-      deliveryRate: "-",
-      openRate: "-",
-    },
-  ];
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["announcements"] });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Delivered":
-        return "bg-success/10 text-success border-success/20";
-      case "Scheduled":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "Draft":
-        return "bg-warning/10 text-warning border-warning/20";
-      case "Failed":
-        return "bg-destructive/10 text-destructive border-destructive/20";
-      default:
-        return "bg-muted/10 text-muted-foreground border-border";
-    }
-  };
+  const publishMutation = useMutation({
+    mutationFn: (publishImmediately: boolean) =>
+      publishAnnouncement({
+        tenantId: tenant?.id ?? "",
+        createdBy: user?.id ?? "",
+        title: form.title,
+        content: form.content,
+        category: form.category,
+        audience: form.audience,
+        publishImmediately,
+      }),
+    onSuccess: (_, publishImmediately) => {
+      toast.success(publishImmediately ? "Announcement published!" : "Draft saved.");
+      setForm(EMPTY_FORM);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "AGM":
-        return "bg-primary/10 text-primary border-primary/20";
-      case "Product":
-        return "bg-success/10 text-success border-success/20";
-      case "System":
-        return "bg-warning/10 text-warning border-warning/20";
-      case "General":
-        return "bg-muted/10 text-muted-foreground border-border";
-      default:
-        return "bg-muted/10 text-muted-foreground border-border";
-    }
-  };
+  const draftMutation = useMutation({
+    mutationFn: () =>
+      saveAnnouncementAsDraft({
+        tenantId: tenant?.id ?? "",
+        createdBy: user?.id ?? "",
+        title: form.title,
+        content: form.content,
+        category: form.category,
+        audience: form.audience,
+      }),
+    onSuccess: () => {
+      toast.success("Draft saved.");
+      setForm(EMPTY_FORM);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const formIsValid = form.title.trim() && form.content.trim() && form.category && form.audience;
+  const isBusy = publishMutation.isPending || draftMutation.isPending;
+
+  const publishedCount = announcements.filter((a) => a.status === "Delivered").length;
+  const scheduledCount = announcements.filter((a) => a.status === "Scheduled").length;
+  const draftCount = announcements.filter((a) => a.status === "Draft").length;
 
   return (
     <div className="space-y-6">
@@ -118,73 +121,35 @@ const Announcements = () => {
           <h1 className="text-2xl font-bold text-foreground">Announcements</h1>
           <p className="text-muted-foreground">Communicate with your cooperative members</p>
         </div>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          New Announcement
-        </Button>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Megaphone className="h-5 w-5 text-primary" />
+        {[
+          { label: "Total Sent", value: publishedCount, sub: "Published", icon: Megaphone, color: "primary" },
+          { label: "Active Members", value: "—", sub: "Reachable", icon: Users, color: "success" },
+          { label: "Drafts", value: draftCount, sub: "Not sent yet", icon: Mail, color: "warning" },
+          { label: "Scheduled", value: scheduledCount, sub: "Pending delivery", icon: MessageCircle, color: "destructive" },
+        ].map(({ label, value, sub, icon: Icon, color }) => (
+          <Card key={label}>
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2 bg-${color}/10 rounded-lg`}>
+                  <Icon className={`h-5 w-5 text-${color}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{label}</p>
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-12 mt-1" />
+                  ) : (
+                    <p className="text-2xl font-bold">{value}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{sub}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Sent</p>
-                <p className="text-2xl font-bold">156</p>
-                <p className="text-xs text-muted-foreground">This year</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-success/10 rounded-lg">
-                <Users className="h-5 w-5 text-success" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg. Reach</p>
-                <p className="text-2xl font-bold">1,205</p>
-                <p className="text-xs text-muted-foreground">Active members</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-warning/10 rounded-lg">
-                <Mail className="h-5 w-5 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Open Rate</p>
-                <p className="text-2xl font-bold">76.2%</p>
-                <p className="text-xs text-muted-foreground">Last 30 days</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-destructive/10 rounded-lg">
-                <MessageCircle className="h-5 w-5 text-destructive" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Scheduled</p>
-                <p className="text-2xl font-bold">3</p>
-                <p className="text-xs text-muted-foreground">Pending delivery</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -192,22 +157,22 @@ const Announcements = () => {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Create New Announcement</CardTitle>
+              <CardTitle>Create Announcement</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="title">Title</Label>
-                <Input 
-                  id="title" 
+                <Input
+                  id="title"
                   placeholder="Announcement title"
-                  value={announcementForm.title}
-                  onChange={(e) => setAnnouncementForm({...announcementForm, title: e.target.value})}
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select value={announcementForm.category} onValueChange={(value) => setAnnouncementForm({...announcementForm, category: value})}>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -223,18 +188,18 @@ const Announcements = () => {
 
               <div>
                 <Label htmlFor="content">Content</Label>
-                <Textarea 
-                  id="content" 
+                <Textarea
+                  id="content"
                   placeholder="Write your announcement..."
                   rows={4}
-                  value={announcementForm.content}
-                  onChange={(e) => setAnnouncementForm({...announcementForm, content: e.target.value})}
+                  value={form.content}
+                  onChange={(e) => setForm({ ...form, content: e.target.value })}
                 />
               </div>
 
               <div>
                 <Label htmlFor="audience">Audience</Label>
-                <Select value={announcementForm.audience} onValueChange={(value) => setAnnouncementForm({...announcementForm, audience: value})}>
+                <Select value={form.audience} onValueChange={(v) => setForm({ ...form, audience: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select audience" />
                   </SelectTrigger>
@@ -247,63 +212,39 @@ const Announcements = () => {
                 </Select>
               </div>
 
-              <div>
-                <Label>Delivery Channels</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge variant="outline" className="cursor-pointer">Portal</Badge>
-                  <Badge variant="outline" className="cursor-pointer">Email</Badge>
-                  <Badge variant="outline" className="cursor-pointer">SMS</Badge>
-                  <Badge variant="outline" className="cursor-pointer">Push</Badge>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="schedule">Schedule</Label>
-                <Select value={announcementForm.schedule} onValueChange={(value) => setAnnouncementForm({...announcementForm, schedule: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="When to send" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="immediate">Send Immediately</SelectItem>
-                    <SelectItem value="schedule">Schedule for Later</SelectItem>
-                    <SelectItem value="draft">Save as Draft</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex space-x-2">
-                <Button variant="outline" className="flex-1">
-                  Save Draft
+              <div className="flex space-x-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={!formIsValid || isBusy}
+                  onClick={() => draftMutation.mutate()}
+                >
+                  {draftMutation.isPending ? "Saving…" : "Save Draft"}
                 </Button>
-                <Button className="flex-1">
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Now
+                <Button
+                  className="flex-1"
+                  disabled={!formIsValid || isBusy}
+                  onClick={() => publishMutation.mutate(true)}
+                >
+                  {publishMutation.isPending ? (
+                    "Sending…"
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Publish Now
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Announcements List */}
+        {/* Announcement History */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Announcement History</CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Select defaultValue="all">
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <CardTitle>Announcement History</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="border rounded-lg">
@@ -313,74 +254,61 @@ const Announcements = () => {
                       <TableHead>Title</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Audience</TableHead>
-                      <TableHead>Channels</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Sent Date</TableHead>
-                      <TableHead>Open Rate</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {announcements.map((announcement) => (
-                      <TableRow key={announcement.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{announcement.title}</p>
-                            <p className="text-sm text-muted-foreground">{announcement.id}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={getCategoryColor(announcement.category)}>
-                            {announcement.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{announcement.audience}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {announcement.channels.map((channel) => (
-                              <Badge key={channel} variant="secondary" className="text-xs">
-                                {channel}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={getStatusColor(announcement.status)}>
-                            {announcement.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{announcement.sentDate}</TableCell>
-                        <TableCell>{announcement.openRate}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {announcement.status === "Draft" && (
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
+                    {isLoading ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: 6 }).map((_, j) => (
+                            <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : announcements.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <div className="flex flex-col items-center py-10 text-center text-muted-foreground">
+                            <Megaphone className="h-10 w-10 mb-3 opacity-30" />
+                            <p className="font-medium">No announcements yet</p>
+                            <p className="text-sm">Use the form on the left to publish your first message.</p>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      announcements.map((ann) => (
+                        <TableRow key={ann.id}>
+                          <TableCell>
+                            <p className="font-medium line-clamp-1">{ann.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{ann.content}</p>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getCategoryColor(ann.category)}>
+                              {ann.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{ann.audience}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getStatusColor(ann.status)}>
+                              {ann.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {ann.publishedAt ?? ann.createdAt}
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
-              </div>
-
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing 3 of 156 announcements
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
-                </div>
               </div>
             </CardContent>
           </Card>

@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code memory / project notes
+.claude/
+Architecture and strategy/
+
+# API secrets (never commit)
+api/.dev.vars

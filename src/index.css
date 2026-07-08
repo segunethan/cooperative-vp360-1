@@ -1,103 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* GreenPole Cooperative Design System - All colors MUST be HSL */
+/*
+ * Jollify Design System — The Architectural Ledger
+ * Deep Forest Green · Warm Off-White · Editorial Authority
+ *
+ * Palette anchored in #1B4332 (forest green) — institutional strength & growth.
+ * No-Line Rule: boundaries defined through tonal surface shifts, not 1px borders.
+ * Ghost Border Fallback: outline_variant (#c1c8c2) at very low opacity only.
+ */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 217 19% 27%;
+    /* ── Surface Hierarchy (tonal shifting — no hard lines) ──────────────── */
+    --background:     80 20% 97%;       /* #f9faf6 — base layer (surface)        */
+    --card:            0  0% 100%;       /* #ffffff — surface_container_lowest     */
+    --popover:         0  0% 100%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 217 19% 27%;
+    /* ── Text ─────────────────────────────────────────────────────────────── */
+    --foreground:    120  4% 10%;        /* #1a1c1a — on_surface                  */
+    --card-foreground: 120 4% 10%;
+    --popover-foreground: 120 4% 10%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 217 19% 27%;
-
-    /* GreenPole brand colors - teal/green theme */
-    --primary: 174 72% 56%;
+    /* ── Primary — Deep Forest Green #012d1d ─────────────────────────────── */
+    --primary:       158 96%  9%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 174 72% 46%;
 
-    --secondary: 174 25% 94%;
-    --secondary-foreground: 174 72% 25%;
+    /* ── Secondary — surface_container_low tint with green foreground ─────── */
+    --secondary:      80 10% 93%;        /* #f3f4f1                               */
+    --secondary-foreground: 154 42% 18%; /* #1b4332 — primary_container           */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* ── Muted — surface_container_low ───────────────────────────────────── */
+    --muted:          80 10% 93%;        /* #f3f4f1                               */
+    --muted-foreground: 120 4% 40%;
 
-    --accent: 174 25% 94%;
-    --accent-foreground: 174 72% 25%;
+    /* ── Accent — surface_container_high for nested info ─────────────────── */
+    --accent:         80  7% 91%;        /* #e8e8e5                               */
+    --accent-foreground: 158 96% 9%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* ── Semantic ─────────────────────────────────────────────────────────── */
+    --destructive:     0 75% 42%;        /* #ba1a1a — error                       */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 174 72% 56%;
-
-    --radius: 0.375rem;
-
-    /* Sidebar specific colors matching GreenPole */
-    --sidebar-background: 174 72% 56%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 174 72% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 174 72% 46%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 174 72% 46%;
-    --sidebar-ring: 174 72% 76%;
-
-    /* Success and warning colors */
-    --success: 142 76% 36%;
+    --success:       142 55% 32%;
     --success-foreground: 0 0% 100%;
-    --warning: 48 96% 53%;
-    --warning-foreground: 217 19% 27%;
 
-    /* Chart colors */
-    --chart-1: 174 72% 56%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 48 96% 53%;
-    --chart-4: 217 91% 60%;
-    --chart-5: 270 95% 75%;
+    --warning:        38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+
+    /* ── Chrome — Ghost Border (outline_variant #c1c8c2 at low opacity) ──── */
+    --border:        129  6% 84%;        /* very subtle warm grey-green           */
+    --input:          80  7% 89%;        /* #e3e4e1 — surface_container_highest   */
+    --ring:          158 96%  9%;        /* primary for focus rings               */
+
+    /* ── Shape — modern sturdy feel ──────────────────────────────────────── */
+    --radius: 0.75rem;
+
+    /* ── Sidebar — deep forest green #012d1d ────────────────────────────── */
+    --sidebar-background:         158 96%  9%;    /* #012d1d                      */
+    --sidebar-foreground:         146 40% 82%;    /* soft mint white              */
+    --sidebar-primary:            146 53% 84%;    /* #c1ecd4 — primary_fixed      */
+    --sidebar-primary-foreground: 158 96%  9%;
+    --sidebar-accent:             154 42% 15%;    /* #1b4332 hover state          */
+    --sidebar-accent-foreground:  146 53% 84%;
+    --sidebar-border:             154 42% 13%;
+    --sidebar-ring:               146 53% 84%;
+
+    /* ── Charts — green-anchored editorial palette ───────────────────────── */
+    --chart-1:  153 41% 29%;             /* #2c694e — secondary green             */
+    --chart-2:  146 53% 55%;             /* mid mint                              */
+    --chart-3:  217 91% 60%;             /* accent blue                           */
+    --chart-4:    0 75% 42%;             /* error red                             */
+    --chart-5:  270 60% 65%;             /* violet                                */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background:    158 35%  7%;
+    --foreground:     80 20% 93%;
+    --card:          154 30% 10%;
+    --card-foreground: 80 20% 93%;
+    --popover:       154 30% 10%;
+    --popover-foreground: 80 20% 93%;
+    --primary:       146 53% 84%;        /* primary_fixed becomes primary in dark */
+    --primary-foreground: 158 96% 9%;
+    --secondary:     154 20% 15%;
+    --secondary-foreground: 80 20% 80%;
+    --muted:         154 20% 15%;
+    --muted-foreground: 80 10% 55%;
+    --accent:        154 20% 15%;
+    --accent-foreground: 80 20% 93%;
+    --destructive:     0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border:        154 20% 17%;
+    --input:         154 20% 17%;
+    --ring:          146 53% 84%;
+    --sidebar-background:         158 50%  4%;
+    --sidebar-foreground:          80 15% 75%;
+    --sidebar-primary:            146 53% 84%;
+    --sidebar-primary-foreground: 158 96%  9%;
+    --sidebar-accent:             154 30% 13%;
+    --sidebar-accent-foreground:  146 53% 84%;
+    --sidebar-border:             154 30% 11%;
+    --sidebar-ring:               146 53% 84%;
   }
 }
 
@@ -106,7 +113,67 @@
     @apply border-border;
   }
 
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Manrope for all headings — editorial authority */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 600;
+  }
+
+  /* Tabular numbers for financial data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* Hero gradient — primary (#012d1d) → primary_container (#1b4332) */
+  .bg-hero-gradient {
+    background: linear-gradient(135deg, hsl(158 96% 9%), hsl(154 42% 18%));
+  }
+
+  /* Gradient text for hero balance reveals */
+  .text-green-gradient {
+    background: linear-gradient(135deg, hsl(153 41% 45%), hsl(146 53% 65%), hsl(153 41% 35%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glassmorphism — for floating bars and modal headers */
+  .glass {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Tonal card lift — elevation via tonal shadow (not hard drop) */
+  .card-hover {
+    @apply transition-shadow duration-200;
+  }
+  .card-hover:hover {
+    box-shadow:
+      0 4px 20px -4px hsl(158 96% 9% / 0.08),
+      0 0 0 1px hsl(158 96% 9% / 0.04);
+  }
+
+  /* Manrope display for large balance/metric reveals */
+  .font-display {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  .font-heading {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 600;
   }
 }
