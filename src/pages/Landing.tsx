@@ -16,6 +16,12 @@ import {
   ChevronRight,
   Menu,
   X,
+  RefreshCw,
+  Megaphone,
+  Package,
+  CalendarDays,
+  BadgeCheck,
+  Banknote,
 } from "lucide-react";
 
 /* ── Animation helpers ───────────────────────────────────────────── */
@@ -99,39 +105,65 @@ const features = [
   {
     icon: Users,
     title: "Member Management",
-    desc: "Full lifecycle from invite to exit — KYC verification, member numbers, bulk CSV import, and status management in one place.",
+    desc: "Full lifecycle from invite to exit — KYC verification, unique member IDs, bulk CSV import, and status management in one place.",
     accent: "from-primary/8 to-primary/4",
+  },
+  {
+    icon: RefreshCw,
+    title: "Rotational Savings (Ajo/Esusu)",
+    desc: "Run structured Ajo and Esusu cycles digitally. Track rotation schedules, who's collecting next, and ensure every member contributes on time — no spreadsheet, no arguments.",
+    accent: "from-emerald-500/8 to-emerald-500/4",
   },
   {
     icon: PiggyBank,
     title: "Contribution Tracking",
-    desc: "Every kobo posted to an append-only double-entry ledger. Balances computed — never stored as a mutable number.",
+    desc: "Every kobo posted to an append-only double-entry ledger. Approve, reject, or query any payment with a full audit trail.",
     accent: "from-blue-500/8 to-blue-500/4",
   },
   {
-    icon: CreditCard,
-    title: "Loan Processing",
-    desc: "Application, committee review, disbursement, and repayment tracking across configurable loan products.",
+    icon: Package,
+    title: "Loan Products Catalogue",
+    desc: "Define Personal, Emergency, Business, and Agricultural loan products — each with its own interest rate, max tenure, and eligibility criteria. Members apply, committee approves.",
     accent: "from-violet-500/8 to-violet-500/4",
   },
   {
     icon: TrendingUp,
     title: "Dividend Distribution",
-    desc: "Calculate member entitlements by contribution share. Integer arithmetic — zero rounding errors, ever.",
-    accent: "from-emerald-500/8 to-emerald-500/4",
+    desc: "Declare dividends with a qualification date. Jollify calculates every member's entitlement automatically — integer arithmetic, zero rounding errors.",
+    accent: "from-amber-500/8 to-amber-500/4",
+  },
+  {
+    icon: Megaphone,
+    title: "Announcements & Communications",
+    desc: "Publish AGM notices, payment reminders, and policy updates to all members — or target just active members, board members, or delinquent borrowers.",
+    accent: "from-rose-500/8 to-rose-500/4",
   },
   {
     icon: Shield,
     title: "Bank-Grade Security",
     desc: "Row-Level Security at the Postgres layer. Cooperative A cannot read a single byte of Cooperative B's data.",
-    accent: "from-amber-500/8 to-amber-500/4",
+    accent: "from-primary/8 to-primary/4",
   },
   {
     icon: FileText,
     title: "Immutable Audit Trail",
-    desc: "Every admin action — approvals, disbursements, declarations — logged with actor ID and timestamp. Permanent.",
-    accent: "from-rose-500/8 to-rose-500/4",
+    desc: "Every admin action — approvals, disbursements, declarations — logged with actor ID and timestamp. Permanent, tamper-proof.",
+    accent: "from-blue-500/8 to-blue-500/4",
   },
+];
+
+const loanProducts = [
+  { icon: Banknote, name: "Personal Loan", desc: "For member welfare and personal needs", rate: "From 2% / month" },
+  { icon: Zap, name: "Emergency Loan", desc: "Fast-tracked for urgent situations", rate: "From 1.5% / month" },
+  { icon: TrendingUp, name: "Business Loan", desc: "For member SME and trading capital", rate: "From 3% / month" },
+  { icon: Package, name: "Agricultural Loan", desc: "Seasonal disbursement for farmers", rate: "From 2.5% / month" },
+];
+
+const announcementTypes = [
+  { icon: CalendarDays, label: "AGM Notices", desc: "Notify all members of upcoming general meetings with date, time, and agenda." },
+  { icon: TrendingUp, label: "Dividend Alerts", desc: "Automatically inform members when dividends are declared and ready for payout." },
+  { icon: BadgeCheck, label: "Policy Updates", desc: "Communicate changes to loan terms, contribution schedules, or cooperative rules." },
+  { icon: Megaphone, label: "Payment Reminders", desc: "Target delinquent members with automated contribution reminders before deadlines." },
 ];
 
 const stats = [
@@ -445,6 +477,155 @@ export default function Landing() {
             </motion.div>
           ))}
         </motion.div>
+      </section>
+
+      {/* ── Ajo/Esusu spotlight ──────────────────────────────────────── */}
+      <section className="py-24 bg-white border-y border-border">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <FadeSection>
+              <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-4">Rotational Savings</p>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-5 leading-tight">
+                Ajo and Esusu,<br />finally done right.
+              </h2>
+              <p className="text-muted-foreground text-base leading-relaxed mb-6">
+                Millions of Nigerians participate in rotating savings — but most are still managed over WhatsApp and paper. Jollify brings your Ajo and Esusu cycles online: define the rotation order, track who has collected, flag missed contributions, and give every member a clear view of when their turn comes.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Set contribution amounts and collection schedule upfront",
+                  "Auto-track who is next in the rotation queue",
+                  "Flag and notify members who miss their contribution",
+                  "Full history of every cycle — no disputes, no 'I paid already'",
+                  "Run multiple Ajo groups under one cooperative account",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span className="text-sm text-muted-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </FadeSection>
+
+            <FadeSection delay={0.15}>
+              <div className="bg-background rounded-2xl border border-border p-6 space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-display font-bold text-foreground text-sm">Ajo Cycle — July 2026</span>
+                  <span className="text-xs bg-primary/8 text-primary font-semibold px-2.5 py-1 rounded-full">Round 4 of 12</span>
+                </div>
+                {[
+                  { name: "Ngozi Adeyemi", amount: "₦50,000", status: "Collected", turn: "Jan" },
+                  { name: "Emeka Okafor", amount: "₦50,000", status: "Collected", turn: "Feb" },
+                  { name: "Fatima Bello", amount: "₦50,000", status: "Collected", turn: "Mar" },
+                  { name: "Chidi Eze", amount: "₦50,000", status: "Collecting now", turn: "Apr", active: true },
+                  { name: "Aisha Mohammed", amount: "₦50,000", status: "Upcoming", turn: "May" },
+                  { name: "Taiwo Ogundimu", amount: "₦50,000", status: "Upcoming", turn: "Jun" },
+                ].map((row) => (
+                  <div
+                    key={row.name}
+                    className={`flex items-center justify-between p-3 rounded-xl text-sm ${
+                      row.active
+                        ? "bg-primary text-white"
+                        : "bg-white border border-border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${row.active ? "bg-white/20 text-white" : "bg-primary/8 text-primary"}`}>
+                        {row.name[0]}
+                      </div>
+                      <span className={`font-medium ${row.active ? "text-white" : "text-foreground"}`}>{row.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-semibold tabular-nums ${row.active ? "text-white" : "text-foreground"}`}>{row.amount}</div>
+                      <div className={`text-xs ${row.active ? "text-white/70" : row.status === "Collected" ? "text-primary" : "text-muted-foreground"}`}>{row.status}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </FadeSection>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Loan Products ─────────────────────────────────────────────── */}
+      <section className="py-24 max-w-6xl mx-auto px-6">
+        <FadeSection className="text-center mb-14">
+          <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-3">Loan Products</p>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">
+            Every cooperative has different lending needs.
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
+            Configure as many loan products as you need — each with its own interest rate, tenure cap, and approval workflow. Members apply, committee approves, disbursement is tracked.
+          </p>
+        </FadeSection>
+
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+          variants={staggerChildren}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+        >
+          {loanProducts.map(({ icon: Icon, name, desc, rate }) => (
+            <motion.div
+              key={name}
+              variants={fadeUp}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              className="group bg-white rounded-2xl p-6 border border-border hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4 group-hover:bg-primary/14 transition-colors">
+                <Icon className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-display font-bold text-foreground mb-1.5 text-base">{name}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">{desc}</p>
+              <div className="text-xs font-semibold text-primary bg-primary/6 rounded-lg px-3 py-1.5 w-fit">{rate}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </section>
+
+      {/* ── Announcements ─────────────────────────────────────────────── */}
+      <section className="py-24 bg-white border-y border-border">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <FadeSection delay={0.1}>
+              <div className="space-y-4">
+                {announcementTypes.map(({ icon: Icon, label, desc }) => (
+                  <motion.div
+                    key={label}
+                    className="flex gap-4 p-4 rounded-xl border border-border hover:border-primary/20 hover:bg-primary/2 transition-all duration-200 cursor-default"
+                    whileHover={{ x: 4, transition: { duration: 0.15 } }}
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-display font-semibold text-foreground text-sm mb-1">{label}</div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </FadeSection>
+
+            <FadeSection>
+              <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-4">Announcements</p>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-5 leading-tight">
+                Reach every member.<br />Every time.
+              </h2>
+              <p className="text-muted-foreground text-base leading-relaxed mb-6">
+                Stop chasing members over WhatsApp. Publish official announcements directly from the platform — AGM dates, dividend notices, loan policy changes — and target exactly who needs to see it.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {["All members", "Active only", "Board members", "Delinquent borrowers", "New members"].map((tag) => (
+                  <span key={tag} className="text-xs font-medium text-primary bg-primary/8 border border-primary/12 rounded-full px-3 py-1.5">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </FadeSection>
+          </div>
+        </div>
       </section>
 
       {/* ── How it works ─────────────────────────────────────────────── */}
