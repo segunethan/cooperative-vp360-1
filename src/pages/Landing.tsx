@@ -152,6 +152,27 @@ const features = [
   },
 ];
 
+const testimonials = [
+  {
+    quote: "Before Jollify, our treasurer was managing 280 members on Excel. We had disputes every quarter. Now everything is transparent — members check their balances themselves.",
+    name: "Mrs. Adaeze Okonkwo",
+    title: "Treasurer, Lagos Civil Servants Cooperative",
+    avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=80&q=80",
+  },
+  {
+    quote: "The Ajo feature alone was worth it. We run 4 rotation groups inside our cooperative. Tracking who has collected and who owes used to take hours every month. Now it's instant.",
+    name: "Mr. Chukwuemeka Nwosu",
+    title: "Chairman, Nnewi Traders Welfare Society",
+    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=80&q=80",
+  },
+  {
+    quote: "We declared dividends for the first time in our cooperative's history last year. Jollify calculated every member's entitlement in seconds. No errors. No complaints.",
+    name: "Dr. Fatima Abdullahi",
+    title: "Secretary, Abuja Women Investment Cooperative",
+    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=80&q=80",
+  },
+];
+
 const loanProducts = [
   { icon: Banknote, name: "Personal Loan", desc: "For member welfare and personal needs", rate: "From 2% / month" },
   { icon: Zap, name: "Emergency Loan", desc: "Fast-tracked for urgent situations", rate: "From 1.5% / month" },
@@ -317,104 +338,178 @@ export default function Landing() {
       </motion.header>
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-hero-gradient pt-16">
+      <section className="relative overflow-hidden bg-hero-gradient pt-16 min-h-[90vh] flex items-center">
         {/* Dot grid */}
         <div
-          className="absolute inset-0 opacity-[0.045]"
+          className="absolute inset-0 opacity-[0.04]"
           style={{
             backgroundImage: `radial-gradient(circle at 1px 1px, hsl(146 53% 84%) 1px, transparent 0)`,
             backgroundSize: "30px 30px",
           }}
         />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-black/20 to-transparent pointer-events-none" />
 
-        {/* Glow blobs */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-green-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-64 h-64 bg-emerald-400/8 rounded-full blur-[80px] pointer-events-none" />
+        <div className="relative max-w-6xl mx-auto px-6 py-20 w-full grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-        <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-28 text-center">
-
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-xs font-semibold text-green-100 mb-8 tracking-wide uppercase"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
-            Built for Nigerian Cooperative Societies
-          </motion.div>
-
-          <motion.h1
-            className="font-display text-5xl md:text-7xl font-extrabold text-white leading-[1.05] tracking-[-1.5px] mb-6 max-w-4xl mx-auto"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          >
-            The modern OS for{" "}
-            <span
-              className="inline-block"
-              style={{
-                background: "linear-gradient(135deg, hsl(146 53% 84%), hsl(153 41% 65%), hsl(146 53% 84%))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
+          {/* ── Left: Text ── */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 text-xs font-semibold text-green-100 mb-7 tracking-wide uppercase"
             >
-              cooperatives
-            </span>
-          </motion.h1>
-
-          <motion.p
-            className="text-lg md:text-xl text-white/55 max-w-2xl mx-auto mb-10 leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.28 }}
-          >
-            Manage members, track contributions, process loans, and distribute
-            dividends — from one secure, auditable platform. No spreadsheets. No WhatsApp groups.
-          </motion.p>
-
-          <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.36 }}
-          >
-            <motion.div whileHover={{ scale: 1.025 }} whileTap={{ scale: 0.975 }}>
-              <Link
-                to="/signup"
-                className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-7 py-3.5 rounded-xl text-sm hover:bg-green-50 transition-colors duration-200 shadow-xl shadow-black/20"
-              >
-                Create free account <ArrowRight className="h-4 w-4" />
-              </Link>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
+              Built for Nigerian Cooperative Societies
             </motion.div>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 text-white/80 font-medium px-6 py-3.5 rounded-xl text-sm border border-white/20 hover:bg-white/10 transition-colors duration-200"
-              >
-                Log in to your account
-              </Link>
-            </motion.div>
-          </motion.div>
 
-          {/* Trust bar */}
-          <motion.div
-            className="flex flex-wrap items-center justify-center gap-6 mt-14"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            {[
-              { icon: Lock, text: "Double-entry ledger" },
-              { icon: Shield, text: "Postgres RLS isolation" },
-              { icon: Zap, text: "Real-time dashboard" },
-              { icon: Globe, text: "Public REST API" },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-2 text-sm text-white/45">
-                <Icon className="h-3.5 w-3.5 text-green-300/60" />
-                <span>{text}</span>
+            <motion.h1
+              className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.06] tracking-[-1.5px] mb-6"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            >
+              Run your cooperative{" "}
+              <span
+                style={{
+                  background: "linear-gradient(135deg, hsl(146 53% 84%), hsl(153 41% 65%))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                the right way.
+              </span>
+            </motion.h1>
+
+            <motion.p
+              className="text-base md:text-lg text-white/60 mb-8 leading-relaxed max-w-lg"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.28 }}
+            >
+              Jollify gives cooperative societies across Nigeria a single platform to manage members, track contributions, run Ajo savings, process loans, and distribute dividends — securely and transparently.
+            </motion.p>
+
+            <motion.div
+              className="flex flex-col sm:flex-row gap-3 mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.36 }}
+            >
+              <motion.div whileHover={{ scale: 1.025 }} whileTap={{ scale: 0.975 }}>
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3.5 rounded-xl text-sm hover:bg-green-50 transition-colors duration-200 shadow-xl shadow-black/20"
+                >
+                  Create free account <ArrowRight className="h-4 w-4" />
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 text-white/80 font-medium px-6 py-3.5 rounded-xl text-sm border border-white/20 hover:bg-white/10 transition-colors duration-200"
+                >
+                  Log in to your account
+                </Link>
+              </motion.div>
+            </motion.div>
+
+            {/* Avatar stack + social proof */}
+            <motion.div
+              className="flex items-center gap-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <div className="flex -space-x-2">
+                {[
+                  "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=40&q=80",
+                  "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=40&q=80",
+                  "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=40&q=80",
+                  "https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=40&q=80",
+                ].map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt=""
+                    className="w-8 h-8 rounded-full border-2 border-primary object-cover"
+                  />
+                ))}
               </div>
-            ))}
+              <div className="text-white/60 text-xs leading-tight">
+                <span className="text-white font-semibold">500+ cooperatives</span>
+                <br />already on Jollify
+              </div>
+            </motion.div>
+          </div>
+
+          {/* ── Right: Photo collage ── */}
+          <motion.div
+            className="hidden md:block relative"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {/* Main large image */}
+            <div className="rounded-2xl overflow-hidden h-72 relative shadow-2xl shadow-black/30">
+              <img
+                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=700&q=85"
+                alt="Cooperative members"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
+
+            {/* Two smaller images */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="rounded-xl overflow-hidden h-44 shadow-xl shadow-black/20">
+                <img
+                  src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=400&q=85"
+                  alt="Cooperative admin"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="rounded-xl overflow-hidden h-44 shadow-xl shadow-black/20">
+                <img
+                  src="https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?auto=format&fit=crop&w=400&q=85"
+                  alt="Cooperative members"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Floating stat card — top left */}
+            <motion.div
+              className="absolute -left-6 top-6 bg-white rounded-xl px-4 py-3 shadow-xl shadow-black/15 flex items-center gap-3"
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <div className="font-display font-bold text-foreground text-sm">1,247</div>
+                <div className="text-[11px] text-muted-foreground">Active members</div>
+              </div>
+            </motion.div>
+
+            {/* Floating stat card — bottom right */}
+            <motion.div
+              className="absolute -right-4 bottom-6 bg-white rounded-xl px-4 py-3 shadow-xl shadow-black/15 flex items-center gap-3"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.85 }}
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <div className="font-display font-bold text-foreground text-sm">₦42.6M</div>
+                <div className="text-[11px] text-muted-foreground">Collected this month</div>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -458,7 +553,7 @@ export default function Landing() {
         </FadeSection>
 
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12"
           variants={staggerChildren}
           initial="hidden"
           whileInView="visible"
@@ -479,6 +574,15 @@ export default function Landing() {
             </motion.div>
           ))}
         </motion.div>
+
+        <FadeSection className="text-center">
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-7 py-3.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+          >
+            Explore all features — free <ArrowRight className="h-4 w-4" />
+          </Link>
+        </FadeSection>
       </section>
 
       {/* ── Ajo/Esusu spotlight ──────────────────────────────────────── */}
@@ -544,90 +648,191 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl text-sm hover:bg-primary/90 transition-colors mt-6"
+              >
+                Start your first Ajo cycle <ArrowRight className="h-4 w-4" />
+              </Link>
             </FadeSection>
           </div>
         </div>
       </section>
 
-      {/* ── Loan Products ─────────────────────────────────────────────── */}
+      {/* ── Testimonials ─────────────────────────────────────────────── */}
       <section className="py-24 max-w-6xl mx-auto px-6">
         <FadeSection className="text-center mb-14">
-          <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-3">Loan Products</p>
+          <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-3">What cooperatives say</p>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">
-            Every cooperative has different lending needs.
+            Trusted by cooperative leaders across Nigeria
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
-            Configure as many loan products as you need — each with its own interest rate, tenure cap, and approval workflow. Members apply, committee approves, disbursement is tracked.
+          <p className="text-muted-foreground max-w-lg mx-auto text-base">
+            From Lagos civil servants to Nnewi traders — cooperatives of every size run on Jollify.
           </p>
         </FadeSection>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+          className="grid md:grid-cols-3 gap-6"
           variants={staggerChildren}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-60px" }}
         >
-          {loanProducts.map(({ icon: Icon, name, desc, rate }) => (
+          {testimonials.map((t) => (
             <motion.div
-              key={name}
+              key={t.name}
               variants={fadeUp}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="group bg-white rounded-2xl p-6 border border-border hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+              className="bg-white rounded-2xl p-7 border border-border flex flex-col"
             >
-              <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4 group-hover:bg-primary/14 transition-colors">
-                <Icon className="h-5 w-5 text-primary" />
+              <div className="flex mb-4 gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg key={i} className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
               </div>
-              <h3 className="font-display font-bold text-foreground mb-1.5 text-base">{name}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">{desc}</p>
-              <div className="text-xs font-semibold text-primary bg-primary/6 rounded-lg px-3 py-1.5 w-fit">{rate}</div>
+              <p className="text-sm text-muted-foreground leading-relaxed flex-1 mb-6 italic">"{t.quote}"</p>
+              <div className="flex items-center gap-3 pt-4 border-t border-border">
+                <img src={t.avatar} alt={t.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                <div>
+                  <div className="font-display font-semibold text-foreground text-sm">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">{t.title}</div>
+                </div>
+              </div>
             </motion.div>
           ))}
         </motion.div>
+
+        <FadeSection className="text-center mt-12">
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 border border-primary text-primary font-semibold px-7 py-3.5 rounded-xl text-sm hover:bg-primary/5 transition-colors"
+          >
+            Join them — it's free to start <ArrowRight className="h-4 w-4" />
+          </Link>
+        </FadeSection>
+      </section>
+
+      {/* ── Loan Products ─────────────────────────────────────────────── */}
+      <section className="py-24 bg-white border-y border-border">
+        <div className="max-w-6xl mx-auto px-6">
+          <FadeSection className="text-center mb-14">
+            <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-3">Loan Products</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">
+              Every cooperative has different lending needs.
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-base leading-relaxed">
+              Configure as many loan products as you need — each with its own interest rate, tenure cap, and approval workflow. Members apply, committee approves, disbursement is tracked.
+            </p>
+          </FadeSection>
+
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12"
+            variants={staggerChildren}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+          >
+            {loanProducts.map(({ icon: Icon, name, desc, rate }) => (
+              <motion.div
+                key={name}
+                variants={fadeUp}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className="group bg-background rounded-2xl p-6 border border-border hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-shadow duration-300"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4 group-hover:bg-primary/14 transition-colors">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="font-display font-bold text-foreground mb-1.5 text-base">{name}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">{desc}</p>
+                <div className="text-xs font-semibold text-primary bg-primary/6 rounded-lg px-3 py-1.5 w-fit">{rate}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <FadeSection className="text-center">
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-7 py-3.5 rounded-xl text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              Set up your loan products <ArrowRight className="h-4 w-4" />
+            </Link>
+          </FadeSection>
+        </div>
       </section>
 
       {/* ── Announcements ─────────────────────────────────────────────── */}
-      <section className="py-24 bg-white border-y border-border">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-            <FadeSection delay={0.1}>
-              <div className="space-y-4">
-                {announcementTypes.map(({ icon: Icon, label, desc }) => (
-                  <motion.div
-                    key={label}
-                    className="flex gap-4 p-4 rounded-xl border border-border hover:border-primary/20 hover:bg-primary/2 transition-all duration-200 cursor-default"
-                    whileHover={{ x: 4, transition: { duration: 0.15 } }}
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-display font-semibold text-foreground text-sm mb-1">{label}</div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </FadeSection>
+      <section className="py-24 max-w-6xl mx-auto px-6">
+        <div className="grid md:grid-cols-2 gap-16 items-center">
+          <FadeSection delay={0.1}>
+            <div className="space-y-4">
+              {announcementTypes.map(({ icon: Icon, label, desc }) => (
+                <motion.div
+                  key={label}
+                  className="flex gap-4 p-4 rounded-xl border border-border hover:border-primary/20 hover:bg-primary/2 transition-all duration-200 cursor-default"
+                  whileHover={{ x: 4, transition: { duration: 0.15 } }}
+                >
+                  <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center flex-shrink-0">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-display font-semibold text-foreground text-sm mb-1">{label}</div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </FadeSection>
 
-            <FadeSection>
-              <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-4">Announcements</p>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-5 leading-tight">
-                Reach every member.<br />Every time.
-              </h2>
-              <p className="text-muted-foreground text-base leading-relaxed mb-6">
-                Stop chasing members over WhatsApp. Publish official announcements directly from the platform — AGM dates, dividend notices, loan policy changes — and target exactly who needs to see it.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {["All members", "Active only", "Board members", "Delinquent borrowers", "New members"].map((tag) => (
-                  <span key={tag} className="text-xs font-medium text-primary bg-primary/8 border border-primary/12 rounded-full px-3 py-1.5">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </FadeSection>
-          </div>
+          <FadeSection>
+            <p className="text-xs font-semibold tracking-[3px] uppercase text-primary/60 mb-4">Announcements</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-5 leading-tight">
+              Reach every member.<br />Every time.
+            </h2>
+            <p className="text-muted-foreground text-base leading-relaxed mb-6">
+              Stop chasing members over WhatsApp. Publish official announcements from the platform — AGM dates, dividend notices, loan policy changes — and target exactly who needs to see it.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-8">
+              {["All members", "Active only", "Board members", "Delinquent borrowers", "New members"].map((tag) => (
+                <span key={tag} className="text-xs font-medium text-primary bg-primary/8 border border-primary/12 rounded-full px-3 py-1.5">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl text-sm hover:bg-primary/90 transition-colors"
+            >
+              Start sending announcements <ArrowRight className="h-4 w-4" />
+            </Link>
+          </FadeSection>
         </div>
+      </section>
+
+      {/* ── Community photo banner ────────────────────────────────────── */}
+      <section className="max-w-6xl mx-auto px-6 pb-8">
+        <FadeSection>
+          <div className="relative rounded-3xl overflow-hidden h-64 md:h-80">
+            <img
+              src="https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&w=1400&q=85"
+              alt="Nigerian cooperative community"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/60 to-transparent" />
+            <div className="absolute inset-0 flex items-center px-10 md:px-16">
+              <div className="max-w-lg">
+                <h3 className="font-display text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">
+                  Empowering Nigerian communities,<br />one cooperative at a time.
+                </h3>
+                <p className="text-white/70 text-sm mb-6">From church welfare groups to corporate salary cooperatives — Jollify works for all of them.</p>
+                <Link
+                  to="/signup"
+                  className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3 rounded-xl text-sm hover:bg-green-50 transition-colors"
+                >
+                  Register your cooperative <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </FadeSection>
       </section>
 
       {/* ── How it works ─────────────────────────────────────────────── */}
@@ -686,6 +891,16 @@ export default function Landing() {
               </motion.div>
             ))}
           </motion.div>
+
+          <FadeSection className="text-center mt-14">
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-8 py-4 rounded-xl text-base hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+            >
+              Register your cooperative in 2 minutes <ArrowRight className="h-4 w-4" />
+            </Link>
+            <p className="text-xs text-muted-foreground mt-3">No credit card required. Free to start.</p>
+          </FadeSection>
         </div>
       </section>
 
