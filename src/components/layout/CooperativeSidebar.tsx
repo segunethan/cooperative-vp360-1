@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/context/AuthContext";
 
 interface CooperativeSidebarProps {
   collapsed: boolean;
@@ -34,6 +35,16 @@ const navigationItems = [
 
 export const CooperativeSidebar = ({ collapsed, onToggleCollapse }: CooperativeSidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, tenant, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "??";
+  const displayName = tenant?.name ?? user?.email ?? "Account";
 
   return (
     <div
@@ -127,31 +138,49 @@ export const CooperativeSidebar = ({ collapsed, onToggleCollapse }: CooperativeS
       {/* User footer */}
       <div className="border-t border-sidebar-border p-3">
         {!collapsed ? (
-          <div className="flex items-center gap-2.5 px-1">
-            <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
-              <span className="text-sidebar-primary text-xs font-semibold font-display">AD</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">Admin User</p>
-              <p className="text-[11px] text-sidebar-foreground/40 truncate">admin@jollify.com</p>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5 px-1 py-1">
+              <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-sidebar-primary text-xs font-semibold font-display">{initials}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
+                <p className="text-[11px] text-sidebar-foreground/40 truncate">{user?.email}</p>
+              </div>
             </div>
             <Button
               variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-sidebar-foreground/30 hover:text-sidebar-foreground hover:bg-sidebar-border flex-shrink-0"
+              onClick={handleSignOut}
+              className="w-full justify-start gap-2.5 h-9 px-2 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent text-sm font-medium"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-4 w-4 flex-shrink-0" />
+              Sign out
             </Button>
           </div>
         ) : (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center mx-auto cursor-pointer">
-                <span className="text-sidebar-primary text-xs font-semibold font-display">AD</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right">Admin User</TooltipContent>
-          </Tooltip>
+          <div className="flex flex-col items-center gap-2">
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <div className="w-8 h-8 rounded-full bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center cursor-pointer">
+                  <span className="text-sidebar-primary text-xs font-semibold font-display">{initials}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">{displayName}</TooltipContent>
+            </Tooltip>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSignOut}
+                  className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign out</TooltipContent>
+            </Tooltip>
+          </div>
         )}
       </div>
     </div>

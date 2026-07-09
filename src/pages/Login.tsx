@@ -42,12 +42,12 @@ const Login = () => {
           }}
         />
 
-        <div className="flex items-center gap-3 relative">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+        <Link to="/" className="flex items-center gap-3 relative group">
+          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center group-hover:bg-primary/80 transition-colors">
             <span className="text-primary-foreground font-bold">J</span>
           </div>
-          <span className="text-white font-bold text-xl tracking-tight">Jollify</span>
-        </div>
+          <span className="text-white font-bold text-xl tracking-tight group-hover:text-white/80 transition-colors">Jollify</span>
+        </Link>
 
         <div className="relative space-y-8">
           <blockquote className="text-white/90 text-2xl font-light leading-relaxed tracking-tight">
@@ -76,12 +76,12 @@ const Login = () => {
       {/* Right panel — form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
-          <div className="flex items-center gap-2.5 lg:hidden">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <Link to="/" className="flex items-center gap-2.5 lg:hidden group">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center group-hover:bg-primary/80 transition-colors">
               <span className="text-primary-foreground font-bold text-sm">J</span>
             </div>
-            <span className="font-bold text-lg tracking-tight">Jollify</span>
-          </div>
+            <span className="font-bold text-lg tracking-tight group-hover:text-foreground/70 transition-colors">Jollify</span>
+          </Link>
 
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Welcome back</h1>
