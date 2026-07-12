@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, Building2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Building2, Mail, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const Signup = () => {
@@ -11,6 +11,8 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [resending, setResending] = useState(false);
   const [form, setForm] = useState({
     cooperativeName: "",
     email: "",
@@ -55,6 +57,12 @@ const Signup = () => {
 
       if (tenantError) throw new Error(tenantError.message);
 
+      // If Supabase requires email confirmation, session will be null
+      if (!authData.session) {
+        setVerificationSent(true);
+        return;
+      }
+
       navigate("/cooperative", { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -62,6 +70,65 @@ const Signup = () => {
       setLoading(false);
     }
   };
+
+  const handleResend = async () => {
+    setResending(true);
+    await supabase.auth.resend({ type: "signup", email: form.email });
+    setResending(false);
+  };
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          <div className="text-center space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+              <Mail className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight mb-2">Check your inbox</h1>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                We sent a verification link to <strong className="text-foreground">{form.email}</strong>.
+                Click the link in that email to activate your cooperative account.
+              </p>
+            </div>
+
+            <div className="bg-muted/40 border border-border rounded-xl p-5 text-left space-y-3">
+              {[
+                "Check your spam/junk folder if you don't see it",
+                "The link expires in 24 hours",
+                "After clicking the link you'll be taken to your dashboard",
+              ].map((tip) => (
+                <div key={tip} className="flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground">{tip}</p>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={resending}
+              onClick={handleResend}
+            >
+              {resending ? "Sending…" : "Resend verification email"}
+            </Button>
+
+            <p className="text-sm text-muted-foreground">
+              Wrong email?{" "}
+              <button
+                onClick={() => setVerificationSent(false)}
+                className="text-primary font-medium hover:underline"
+              >
+                Go back and change it
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">

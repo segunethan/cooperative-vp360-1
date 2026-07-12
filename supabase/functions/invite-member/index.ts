@@ -24,7 +24,12 @@ serve(async (req) => {
     );
 
     // Generate a one-time invite link for the member
-    const acceptUrl = redirectTo ?? "https://jollify.app/accept-invite";
+    // SITE_URL secret takes priority so production links always point to Vercel, not localhost
+    const siteUrl = Deno.env.get("SITE_URL");
+    const acceptUrl = siteUrl
+      ? `${siteUrl}/accept-invite`
+      : (redirectTo ?? "https://jollify.app/accept-invite");
+
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: memberEmail,
