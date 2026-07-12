@@ -22,7 +22,6 @@ const AcceptInvite = () => {
     // Supabase puts tokens in the URL fragment after verifying the invite link
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
-        // Fetch their member record to show their name
         const { data } = await supabase
           .from("members")
           .select("full_name")
@@ -30,10 +29,6 @@ const AcceptInvite = () => {
           .maybeSingle();
         if (data?.full_name) setMemberName(data.full_name);
         setStage("set-password");
-      }
-      if (event === "USER_UPDATED") {
-        setStage("success");
-        setTimeout(() => navigate("/member"), 2000);
       }
     });
 
@@ -49,19 +44,15 @@ const AcceptInvite = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
+    if (password !== confirm) { setError("Passwords do not match."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     setError(null);
     setLoading(true);
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (updateError) setError(updateError.message);
+    if (updateError) { setError(updateError.message); return; }
+    setStage("success");
+    setTimeout(() => navigate("/member"), 1500);
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────

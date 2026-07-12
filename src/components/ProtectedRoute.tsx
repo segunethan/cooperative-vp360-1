@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { session, loading } = useAuth();
+  const { session, tenant, loading } = useAuth();
 
   if (loading) {
     return (
@@ -17,9 +17,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!session) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!session) return <Navigate to="/login" replace />;
+
+  // Logged in but not an admin (no tenant) → must be a member
+  if (!tenant) return <Navigate to="/member" replace />;
 
   return <>{children}</>;
 };

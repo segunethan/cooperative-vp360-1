@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, ArrowRight, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,14 +21,22 @@ const Login = () => {
     setError(null);
     setLoading(true);
     const { error } = await signIn(form.email, form.password);
-    setLoading(false);
     if (error) {
-      setError(error === "Invalid login credentials"
-        ? "Incorrect email or password."
-        : error);
+      setLoading(false);
+      setError(error === "Invalid login credentials" ? "Incorrect email or password." : error);
       return;
     }
-    navigate("/cooperative", { replace: true });
+
+    // Determine role: admins are in tenant_users, members are not
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: adminRecord } = await supabase
+      .from("tenant_users")
+      .select("tenant_id")
+      .eq("user_id", user?.id ?? "")
+      .maybeSingle();
+
+    setLoading(false);
+    navigate(adminRecord ? "/cooperative" : "/member", { replace: true });
   };
 
   return (
