@@ -30,12 +30,22 @@ serve(async (req) => {
       ? `${siteUrl}/accept-invite`
       : (redirectTo ?? "https://jollify.app/accept-invite");
 
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    // Try invite first; if user already exists (re-invite), fall back to magic link
+    let result = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email: memberEmail,
       options: { redirectTo: acceptUrl },
     });
 
+    if (result.error?.message?.toLowerCase().includes("already")) {
+      result = await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email: memberEmail,
+        options: { redirectTo: acceptUrl },
+      });
+    }
+
+    const { data: linkData, error: linkError } = result;
     if (linkError) throw new Error(`Invite link error: ${linkError.message}`);
 
     const inviteLink = linkData.properties.action_link;
