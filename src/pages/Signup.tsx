@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight, Building2, Mail, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { reloadTenant } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,8 @@ const Signup = () => {
         return;
       }
 
+      // Reload tenant so ProtectedRoute sees the new admin before navigating
+      await reloadTenant();
       navigate("/cooperative", { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");

@@ -18,6 +18,7 @@ interface AuthContextValue {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  reloadTenant: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -32,12 +33,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .from("tenant_users")
       .select("tenant_id, tenants(id, name, status, billing_plan, slug, cooperative_number)")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (data?.tenants) {
-      const t = data.tenants as unknown as TenantInfo;
-      setTenant(t);
+      setTenant(data.tenants as unknown as TenantInfo);
+    } else {
+      setTenant(null);
     }
+  };
+
+  const reloadTenant = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await loadTenant(user.id);
   };
 
   useEffect(() => {
@@ -71,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, tenant, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, tenant, loading, signIn, signOut, reloadTenant }}>
       {children}
     </AuthContext.Provider>
   );
